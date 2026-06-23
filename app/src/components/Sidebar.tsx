@@ -18,6 +18,21 @@ const nav = [
     icon: "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4",
   },
   {
+    href: "/orders",
+    label: "Orders",
+    icon: "M6 2l1.5 3h9L18 2M4 7h16l-1.2 13H5.2L4 7zM9 11v5m6-5v5",
+  },
+  {
+    href: "/users",
+    label: "Customers",
+    icon: "M16 11a4 4 0 10-8 0M3 20c0-3.3 2.7-5 6-5m9 5c0-2-1-3.5-3-4.3M18 9a3 3 0 100-6",
+  },
+  {
+    href: "/messages",
+    label: "Messages",
+    icon: "M3 5h18v12H7l-4 4V5z",
+  },
+  {
     href: "/blog",
     label: "Journal",
     icon: "M4 5h16M4 12h16M4 19h10",
