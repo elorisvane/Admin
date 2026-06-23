@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Sidebar from "@/app/src/components/Sidebar";
+import AppShell from "@/app/src/components/AppShell";
 
 export const metadata: Metadata = {
   title: "ÉLORIS · Atelier Admin",
@@ -15,10 +15,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full antialiased">
       <body className="min-h-full">
-        <Sidebar />
-        <main className="ml-64 min-h-screen px-10 py-10">
-          <div className="mx-auto max-w-5xl">{children}</div>
-        </main>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

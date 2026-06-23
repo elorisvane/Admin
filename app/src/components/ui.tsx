@@ -56,6 +56,7 @@ export function Textarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
 export function Button({
   children,
   variant = "primary",
+  className = "",
   ...props
 }: {
   children: ReactNode;
@@ -72,7 +73,7 @@ export function Button({
   return (
     <button
       {...props}
-      className={`inline-flex items-center justify-center gap-2 rounded-md px-5 py-2.5 text-xs font-medium uppercase tracking-widest transition-colors ${styles}`}
+      className={`inline-flex items-center justify-center gap-2 rounded-md px-5 py-2.5 text-xs font-medium uppercase tracking-widest transition-colors ${styles} ${className}`}
     >
       {children}
     </button>

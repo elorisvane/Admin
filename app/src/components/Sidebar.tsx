@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useTransition } from "react";
+import { createClient } from "@/app/src/lib/supabase/client";
 
 const nav = [
   { href: "/", label: "Dashboard", icon: "M3 12l9-9 9 9M5 10v10h14V10" },
@@ -19,9 +21,18 @@ const nav = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [signingOut, startSignOut] = useTransition();
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
+
+  const signOut = () =>
+    startSignOut(async () => {
+      await createClient().auth.signOut();
+      router.replace("/login");
+      router.refresh();
+    });
 
   return (
     <aside className="fixed inset-y-0 left-0 z-20 flex w-64 flex-col border-r border-border bg-surface">
@@ -72,15 +83,14 @@ export default function Sidebar() {
         </ul>
       </nav>
 
-      <div className="border-t border-border px-7 py-5">
-        <a
-          href="http://localhost:3000"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs uppercase tracking-widest text-muted hover:text-gold-500 transition-colors"
+      <div className="space-y-3 border-t border-border px-7 py-5">
+        <button
+          onClick={signOut}
+          disabled={signingOut}
+          className="block text-xs uppercase tracking-widest text-muted hover:text-gold-500 transition-colors disabled:opacity-50"
         >
-          View storefront →
-        </a>
+          {signingOut ? "Signing out…" : "Sign out"}
+        </button>
       </div>
     </aside>
   );
