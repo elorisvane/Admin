@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import type { Post } from "@/app/src/data/posts";
 import { savePost, deletePost } from "@/app/src/actions/posts";
 import { Button, Card, Field, Input, Textarea } from "@/app/src/components/ui";
+import { Uploader } from "@/app/src/components/Uploader";
 
 const empty: Post = {
   slug: "",
@@ -107,10 +108,13 @@ export default function PostForm({ initial }: { initial?: Post }) {
           <Field label="Read time" hint="e.g. 6 min read">
             <Input value={form.readTime} onChange={(e) => set("readTime", e.target.value)} />
           </Field>
-          <Field label="Image path" hint="e.g. /assets/1 (4).png">
-            <Input value={form.image} onChange={(e) => set("image", e.target.value)} />
-          </Field>
         </div>
+        <Uploader
+          label="Image"
+          hint="Upload the article image (JPG, PNG or WebP)"
+          value={form.image}
+          onChange={(url) => set("image", url)}
+        />
         <Field label="Excerpt">
           <Textarea rows={2} value={form.excerpt} onChange={(e) => set("excerpt", e.target.value)} />
         </Field>

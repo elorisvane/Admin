@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import type { Product } from "@/app/src/data/products";
 import { saveProduct, deleteProduct } from "@/app/src/actions/products";
 import { Button, Card, Field, Input, Textarea } from "@/app/src/components/ui";
+import { Uploader } from "@/app/src/components/Uploader";
 
 const empty: Product = {
   slug: "",
@@ -112,9 +113,12 @@ export default function ProductForm({ initial }: { initial?: Product }) {
         <Field label="Tagline">
           <Input value={form.tagline} onChange={(e) => set("tagline", e.target.value)} />
         </Field>
-        <Field label="Image path" hint="Relative to the storefront /public, e.g. /assets/1 (4).png">
-          <Input value={form.image} onChange={(e) => set("image", e.target.value)} />
-        </Field>
+        <Uploader
+          label="Image"
+          hint="Upload the product photo (JPG, PNG or WebP)"
+          value={form.image}
+          onChange={(url) => set("image", url)}
+        />
       </Card>
 
       <ListEditor
