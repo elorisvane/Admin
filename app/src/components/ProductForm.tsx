@@ -4,8 +4,35 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import type { Product } from "@/app/src/data/products";
 import { saveProduct, deleteProduct } from "@/app/src/actions/products";
-import { Button, Card, Field, Input, Textarea } from "@/app/src/components/ui";
+import {
+  Button,
+  Card,
+  Field,
+  Input,
+  Select,
+  Textarea,
+} from "@/app/src/components/ui";
 import { Uploader } from "@/app/src/components/Uploader";
+
+const CATEGORIES = [
+  "NECKLACE",
+  "BRACELET",
+  "EARRING",
+  "BROOCH",
+  "WATCH",
+  "RING",
+] as const;
+
+const MATERIAL_PRESETS = [
+  "18kt White Gold",
+  "18kt Yellow Gold",
+  "18kt Rose Gold",
+  "14kt White Gold",
+  "14kt Yellow Gold",
+  "14kt Rose Gold",
+  "Platinum",
+  "Sterling Silver",
+] as const;
 
 const empty: Product = {
   slug: "",
@@ -87,7 +114,11 @@ export default function ProductForm({ initial }: { initial?: Product }) {
       <Card className="space-y-5 p-6">
         <div className="grid grid-cols-2 gap-5">
           <Field label="Name">
-            <Input value={form.name} onChange={(e) => onName(e.target.value)} required />
+            <Input
+              value={form.name}
+              onChange={(e) => onName(e.target.value)}
+              required
+            />
           </Field>
           <Field label="Slug" hint="Used in the storefront URL">
             <Input
@@ -100,18 +131,34 @@ export default function ProductForm({ initial }: { initial?: Product }) {
             />
           </Field>
           <Field label="Category">
-            <Input
+            <Select
               value={form.category}
               onChange={(e) => set("category", e.target.value)}
-              placeholder="RINGS"
-            />
+            >
+              <option value="">Select a category…</option>
+              {CATEGORIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+              {form.category &&
+                !CATEGORIES.includes(
+                  form.category as (typeof CATEGORIES)[number],
+                ) && <option value={form.category}>{form.category}</option>}
+            </Select>
           </Field>
           <Field label="Price" hint="Pre-formatted, e.g. $48,500">
-            <Input value={form.price} onChange={(e) => set("price", e.target.value)} />
+            <Input
+              value={form.price}
+              onChange={(e) => set("price", e.target.value)}
+            />
           </Field>
         </div>
         <Field label="Tagline">
-          <Input value={form.tagline} onChange={(e) => set("tagline", e.target.value)} />
+          <Input
+            value={form.tagline}
+            onChange={(e) => set("tagline", e.target.value)}
+          />
         </Field>
         <Uploader
           label="Image"
@@ -126,7 +173,11 @@ export default function ProductForm({ initial }: { initial?: Product }) {
         items={form.description}
         onChange={(v) => set("description", v)}
         render={(value, onChange) => (
-          <Textarea rows={3} value={value} onChange={(e) => onChange(e.target.value)} />
+          <Textarea
+            rows={3}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+          />
         )}
         blank=""
         addLabel="+ Add paragraph"
@@ -163,6 +214,28 @@ export default function ProductForm({ initial }: { initial?: Product }) {
         )}
         blank=""
         addLabel="+ Add material"
+        footer={
+          <div className="flex flex-wrap gap-2">
+            {MATERIAL_PRESETS.map((material) => {
+              const added = form.materials.some(
+                (m) => m.trim().toLowerCase() === material.toLowerCase(),
+              );
+              return (
+                <button
+                  key={material}
+                  type="button"
+                  disabled={added}
+                  onClick={() =>
+                    set("materials", [...form.materials, material])
+                  }
+                  className="rounded-full border border-border px-3 py-1 text-xs text-foreground transition-colors hover:border-gold-400 hover:text-gold-600 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  + {material}
+                </button>
+              );
+            })}
+          </div>
+        }
       />
 
       {error && <p className="text-sm text-red-500">{error}</p>}
@@ -172,12 +245,21 @@ export default function ProductForm({ initial }: { initial?: Product }) {
           <Button type="submit" disabled={pending}>
             {pending ? "Saving…" : isEdit ? "Save changes" : "Create piece"}
           </Button>
-          <Button type="button" variant="ghost" onClick={() => router.push("/products")}>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => router.push("/products")}
+          >
             Cancel
           </Button>
         </div>
         {isEdit && (
-          <Button type="button" variant="danger" onClick={remove} disabled={pending}>
+          <Button
+            type="button"
+            variant="danger"
+            onClick={remove}
+            disabled={pending}
+          >
             Delete
           </Button>
         )}
@@ -193,6 +275,7 @@ function ListEditor<T>({
   render,
   blank,
   addLabel,
+  footer,
 }: {
   title: string;
   items: T[];
@@ -200,6 +283,7 @@ function ListEditor<T>({
   render: (value: T, onChange: (v: T) => void) => React.ReactNode;
   blank: T;
   addLabel: string;
+  footer?: React.ReactNode;
 }) {
   const update = (i: number, v: T) =>
     onChange(items.map((item, idx) => (idx === i ? v : item)));
@@ -228,6 +312,7 @@ function ListEditor<T>({
       >
         {addLabel}
       </button>
+      {footer}
     </Card>
   );
 }
