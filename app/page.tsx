@@ -63,7 +63,7 @@ export default async function Dashboard() {
               {products.slice(0, 5).map((p) => (
                 <li key={p.slug}>
                   <Link
-                    href={`/products/${p.slug}`}
+                    href={`/products/edit/${p.slug}`}
                     className="flex items-center justify-between px-5 py-3.5 hover:bg-gold-50 transition-colors"
                   >
                     <span className="text-sm text-foreground">{p.name}</span>
@@ -93,7 +93,7 @@ export default async function Dashboard() {
               {posts.slice(0, 5).map((p) => (
                 <li key={p.slug}>
                   <Link
-                    href={`/blog/${p.slug}`}
+                    href={`/blog/edit/${p.slug}`}
                     className="flex items-center justify-between px-5 py-3.5 hover:bg-gold-50 transition-colors"
                   >
                     <span className="text-sm text-foreground">{p.title}</span>

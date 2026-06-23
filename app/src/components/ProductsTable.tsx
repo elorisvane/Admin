@@ -1,18 +1,40 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 import type { Product } from "@/app/src/data/products";
+import { deleteProduct } from "@/app/src/actions/products";
 import { Card, Input } from "@/app/src/components/ui";
 
 export default function ProductsTable({ products }: { products: Product[] }) {
+  const router = useRouter();
   const [query, setQuery] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [deletingSlug, setDeletingSlug] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
 
   const filtered = products.filter((p) =>
     `${p.name} ${p.category} ${p.tagline}`
       .toLowerCase()
       .includes(query.toLowerCase())
   );
+
+  const remove = (p: Product) => {
+    if (!confirm(`Remove “${p.name}” from the storefront?`)) return;
+    setError(null);
+    setDeletingSlug(p.slug);
+    startTransition(async () => {
+      try {
+        await deleteProduct(p.slug);
+        router.refresh();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Could not delete");
+      } finally {
+        setDeletingSlug(null);
+      }
+    });
+  };
 
   return (
     <>
@@ -23,6 +45,8 @@ export default function ProductsTable({ products }: { products: Product[] }) {
           onChange={(e) => setQuery(e.target.value)}
         />
       </div>
+
+      {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
 
       <Card>
         <table className="w-full text-sm">
@@ -39,7 +63,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
               <tr key={p.slug} className="hover:bg-gold-50 transition-colors">
                 <td className="px-5 py-4">
                   <Link
-                    href={`/products/${p.slug}`}
+                    href={`/products/edit/${p.slug}`}
                     className="font-medium text-foreground hover:text-gold-600"
                   >
                     {p.name}
@@ -52,13 +76,23 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                   </span>
                 </td>
                 <td className="px-5 py-4 text-foreground">{p.price}</td>
-                <td className="px-5 py-4 text-right">
-                  <Link
-                    href={`/products/${p.slug}`}
-                    className="text-xs uppercase tracking-widest text-gold-500 hover:text-gold-600"
-                  >
-                    Edit
-                  </Link>
+                <td className="px-5 py-4">
+                  <div className="flex items-center justify-end gap-4">
+                    <Link
+                      href={`/products/edit/${p.slug}`}
+                      className="text-xs uppercase tracking-widest text-gold-500 hover:text-gold-600"
+                    >
+                      Edit
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => remove(p)}
+                      disabled={pending}
+                      className="text-xs uppercase tracking-widest text-muted hover:text-red-500 transition-colors disabled:opacity-50"
+                    >
+                      {deletingSlug === p.slug ? "Deleting…" : "Delete"}
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
