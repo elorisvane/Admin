@@ -62,13 +62,18 @@ export default function ProductsTable({ products }: { products: Product[] }) {
             {filtered.map((p) => (
               <tr key={p.slug} className="hover:bg-gold-50 transition-colors">
                 <td className="px-5 py-4">
-                  <Link
-                    href={`/products/edit/${p.slug}`}
-                    className="font-medium text-foreground hover:text-gold-600"
-                  >
-                    {p.name}
-                  </Link>
-                  <p className="text-xs text-muted">{p.tagline}</p>
+                  <div className="flex items-center gap-3">
+                    <ProductThumb src={p.image} alt={p.name} />
+                    <div className="min-w-0">
+                      <Link
+                        href={`/products/edit/${p.slug}`}
+                        className="font-medium text-foreground hover:text-gold-600"
+                      >
+                        {p.name}
+                      </Link>
+                      <p className="text-xs text-muted">{p.tagline}</p>
+                    </div>
+                  </div>
                 </td>
                 <td className="px-5 py-4">
                   <span className="text-xs uppercase tracking-wider text-muted">
@@ -109,5 +114,17 @@ export default function ProductsTable({ products }: { products: Product[] }) {
         </table>
       </Card>
     </>
+  );
+}
+
+/** Small square preview of a creation's photo. */
+function ProductThumb({ src, alt }: { src: string; alt: string }) {
+  return (
+    <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md border border-border bg-neutral-100">
+      {src ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={src} alt={alt} className="h-full w-full object-cover" />
+      ) : null}
+    </div>
   );
 }

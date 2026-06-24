@@ -29,6 +29,18 @@ function formatDate(iso: string) {
   });
 }
 
+/** Small square preview of an ordered piece. */
+function ItemThumb({ src, alt }: { src?: string; alt: string }) {
+  return (
+    <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md border border-border bg-neutral-100">
+      {src ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={src} alt={alt} className="h-full w-full object-cover" />
+      ) : null}
+    </div>
+  );
+}
+
 export default function OrdersTable({ orders }: { orders: Order[] }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<OrderStatus | "all">("all");
@@ -123,12 +135,18 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
                   <p className="text-xs text-muted">{o.email}</p>
                 </td>
                 <td className="px-5 py-4">
-                  <ul className="space-y-1">
+                  <ul className="space-y-2">
                     {o.items.map((i, idx) => (
-                      <li key={`${i.slug}-${i.material}-${idx}`}>
-                        <span className="text-foreground">{i.name}</span>
-                        <span className="text-muted">
-                          {i.material ? ` · ${i.material}` : ""} × {i.quantity}
+                      <li
+                        key={`${i.slug}-${i.material}-${idx}`}
+                        className="flex items-center gap-2.5"
+                      >
+                        <ItemThumb src={i.image} alt={i.name} />
+                        <span className="min-w-0">
+                          <span className="text-foreground">{i.name}</span>
+                          <span className="text-muted">
+                            {i.material ? ` · ${i.material}` : ""} × {i.quantity}
+                          </span>
                         </span>
                       </li>
                     ))}

@@ -55,9 +55,17 @@ export default function PostsTable({ posts }: { posts: Post[] }) {
               key={p.slug}
               className="flex items-center justify-between gap-6 px-5 py-4 hover:bg-gold-50 transition-colors"
             >
-              <Link href={`/blog/edit/${p.slug}`} className="min-w-0 flex-1">
-                <p className="font-medium text-foreground">{p.title}</p>
-                <p className="mt-0.5 truncate text-xs text-muted">{p.excerpt}</p>
+              <Link
+                href={`/blog/edit/${p.slug}`}
+                className="flex min-w-0 flex-1 items-center gap-4"
+              >
+                <PostThumb src={p.image} alt={p.title} />
+                <div className="min-w-0">
+                  <p className="font-medium text-foreground">{p.title}</p>
+                  <p className="mt-0.5 truncate text-xs text-muted">
+                    {p.excerpt}
+                  </p>
+                </div>
               </Link>
 
               <div className="shrink-0 text-right">
@@ -95,5 +103,17 @@ export default function PostsTable({ posts }: { posts: Post[] }) {
         </ul>
       </Card>
     </>
+  );
+}
+
+/** Small preview of a journal entry's hero image. */
+function PostThumb({ src, alt }: { src: string; alt: string }) {
+  return (
+    <div className="h-12 w-16 shrink-0 overflow-hidden rounded-md border border-border bg-neutral-100">
+      {src ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={src} alt={alt} className="h-full w-full object-cover" />
+      ) : null}
+    </div>
   );
 }

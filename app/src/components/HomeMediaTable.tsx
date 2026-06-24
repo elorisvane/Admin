@@ -80,13 +80,20 @@ export default function HomeMediaTable({ items }: { items: HomeMedia[] }) {
                         </span>
                       </td>
                       <td className="px-5 py-4">
-                        <Link
-                          href={`/home-media/edit/${m.id}`}
-                          className="font-medium text-foreground hover:text-gold-600"
-                        >
-                          {m.title || m.alt || "Untitled"}
-                        </Link>
-                        <p className="text-xs text-muted">{m.src}</p>
+                        <div className="flex items-center gap-3">
+                          <MediaThumb item={m} />
+                          <div className="min-w-0">
+                            <Link
+                              href={`/home-media/edit/${m.id}`}
+                              className="font-medium text-foreground hover:text-gold-600"
+                            >
+                              {m.title || m.alt || "Untitled"}
+                            </Link>
+                            <p className="break-all text-xs text-muted">
+                              {m.src}
+                            </p>
+                          </div>
+                        </div>
                       </td>
                       <td className="px-5 py-4">
                         <div className="flex items-center justify-end gap-4">
@@ -124,6 +131,29 @@ export default function HomeMediaTable({ items }: { items: HomeMedia[] }) {
           </section>
         );
       })}
+    </div>
+  );
+}
+
+/** Small square preview of a home-media item — image, or a video's poster. */
+function MediaThumb({ item }: { item: HomeMedia }) {
+  return (
+    <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md border border-border bg-neutral-100">
+      {item.mediaType === "video" ? (
+        item.poster ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={item.poster} alt="" className="h-full w-full object-cover" />
+        ) : (
+          <video src={item.src} muted className="h-full w-full object-cover" />
+        )
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={item.src}
+          alt={item.alt || ""}
+          className="h-full w-full object-cover"
+        />
+      )}
     </div>
   );
 }
