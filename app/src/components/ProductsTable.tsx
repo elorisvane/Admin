@@ -48,8 +48,8 @@ export default function ProductsTable({ products }: { products: Product[] }) {
 
       {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
 
-      <Card>
-        <table className="w-full text-sm">
+      <Card className="overflow-x-auto">
+        <table className="w-full min-w-[640px] text-sm">
           <thead>
             <tr className="border-b border-border text-left text-xs uppercase tracking-widest text-muted">
               <th className="px-5 py-3 font-medium">Name</th>

@@ -80,7 +80,7 @@ export default async function Dashboard() {
       )}
 
       {/* Recent orders + enquiries */}
-      <div className="mt-12 grid grid-cols-2 gap-6">
+      <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2">
         <section>
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-serif text-2xl">Recent orders</h2>
@@ -168,7 +168,7 @@ export default async function Dashboard() {
         </section>
       </div>
 
-      <div className="mt-12 grid grid-cols-2 gap-6">
+      <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2">
         <section>
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-serif text-2xl">Recent creations</h2>

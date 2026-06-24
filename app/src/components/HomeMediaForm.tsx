@@ -86,7 +86,7 @@ export default function HomeMediaForm({ initial }: { initial?: HomeMedia }) {
   return (
     <form onSubmit={submit} className="space-y-6">
       <Card className="space-y-5 p-6">
-        <div className="grid grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <Field label="Placement" hint="Where it shows on the home page">
             <Select
               value={form.placement}
@@ -135,7 +135,7 @@ export default function HomeMediaForm({ initial }: { initial?: HomeMedia }) {
 
       <Card className="space-y-5 p-6">
         {isCampaign ? (
-          <div className="grid grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <Field label="Title" hint="Caption shown over the artwork">
               <Input
                 value={form.title}
@@ -164,7 +164,7 @@ export default function HomeMediaForm({ initial }: { initial?: HomeMedia }) {
           />
         </Field>
 
-        <div className="grid grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <Field label="Alt text" hint="Describes the media for accessibility">
             <Input
               value={form.alt}
@@ -184,7 +184,7 @@ export default function HomeMediaForm({ initial }: { initial?: HomeMedia }) {
 
       {error && <p className="text-sm text-red-500">{error}</p>}
 
-      <div className="flex items-center justify-between pt-2">
+      <div className="flex flex-col gap-4 pt-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex gap-3">
           <Button type="submit" disabled={pending}>
             {pending ? "Saving…" : isEdit ? "Save changes" : "Add to home page"}

@@ -53,7 +53,7 @@ export default function PostsTable({ posts }: { posts: Post[] }) {
           {filtered.map((p) => (
             <li
               key={p.slug}
-              className="flex items-center justify-between gap-6 px-5 py-4 hover:bg-gold-50 transition-colors"
+              className="flex flex-col gap-3 px-5 py-4 hover:bg-gold-50 transition-colors sm:flex-row sm:items-center sm:justify-between sm:gap-6"
             >
               <Link
                 href={`/blog/edit/${p.slug}`}
@@ -68,7 +68,7 @@ export default function PostsTable({ posts }: { posts: Post[] }) {
                 </div>
               </Link>
 
-              <div className="shrink-0 text-right">
+              <div className="shrink-0 sm:text-right">
                 <p className="text-xs uppercase tracking-wider text-muted">
                   {p.category}
                 </p>

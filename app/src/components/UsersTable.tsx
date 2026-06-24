@@ -36,8 +36,8 @@ export default function UsersTable({ users }: { users: UserRow[] }) {
         />
       </div>
 
-      <Card>
-        <table className="w-full text-sm">
+      <Card className="overflow-x-auto">
+        <table className="w-full min-w-[680px] text-sm">
           <thead>
             <tr className="border-b border-border text-left text-xs uppercase tracking-widest text-muted">
               <th className="px-5 py-3 font-medium">Customer</th>

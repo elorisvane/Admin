@@ -41,8 +41,14 @@ const nav = [
 
 export default function Sidebar({
   categories = [],
+  open = false,
+  onClose,
 }: {
   categories?: string[];
+  /** Whether the mobile drawer is open (ignored at `lg` and up). */
+  open?: boolean;
+  /** Called to dismiss the mobile drawer (backdrop tap, nav, sign out). */
+  onClose?: () => void;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -53,25 +59,41 @@ export default function Sidebar({
 
   const signOut = () =>
     startSignOut(async () => {
+      onClose?.();
       await createClient().auth.signOut();
       router.replace("/login");
       router.refresh();
     });
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-20 flex w-64 flex-col border-r border-border bg-surface">
-      <div className="px-7 py-8 border-b border-border">
-        <Link href="/" className="block">
-          <p className="font-serif text-2xl tracking-[0.3em] text-foreground">
-            ÉLORIS
-          </p>
-          <p className="mt-1 text-[10px] uppercase tracking-[0.35em] text-gold-500">
-            Atelier Admin
-          </p>
-        </Link>
-      </div>
+    <>
+      {/* Backdrop — only present (and only visible) for the mobile drawer. */}
+      {open && (
+        <button
+          type="button"
+          aria-label="Close navigation"
+          onClick={onClose}
+          className="fixed inset-0 z-40 bg-foreground/30 backdrop-blur-sm lg:hidden"
+        />
+      )}
 
-      <nav className="flex-1 px-4 py-6">
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border bg-surface transition-transform duration-300 lg:z-20 lg:translate-x-0 ${
+          open ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="px-7 py-8 border-b border-border">
+          <Link href="/" onClick={onClose} className="block">
+            <p className="font-serif text-2xl tracking-[0.3em] text-foreground">
+              ÉLORIS
+            </p>
+            <p className="mt-1 text-[10px] uppercase tracking-[0.35em] text-gold-500">
+              Atelier Admin
+            </p>
+          </Link>
+        </div>
+
+        <nav className="flex-1 overflow-y-auto px-4 py-6">
         <ul className="space-y-1">
           {nav.map((item) => {
             const active = isActive(item.href);
@@ -79,6 +101,7 @@ export default function Sidebar({
               <li key={item.href}>
                 <Link
                   href={item.href}
+                  onClick={onClose}
                   className={`group flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors ${
                     active
                       ? "bg-gold-100 text-gold-600"
@@ -107,7 +130,7 @@ export default function Sidebar({
                   active &&
                   categories.length > 0 && (
                     <Suspense fallback={null}>
-                      <CategoryNav categories={categories} />
+                      <CategoryNav categories={categories} onClose={onClose} />
                     </Suspense>
                   )}
               </li>
@@ -116,16 +139,17 @@ export default function Sidebar({
         </ul>
       </nav>
 
-      <div className="space-y-3 border-t border-border px-7 py-5">
-        <button
-          onClick={signOut}
-          disabled={signingOut}
-          className="block text-xs uppercase tracking-widest text-muted hover:text-gold-500 transition-colors disabled:opacity-50"
-        >
-          {signingOut ? "Signing out…" : "Sign out"}
-        </button>
-      </div>
-    </aside>
+        <div className="space-y-3 border-t border-border px-7 py-5">
+          <button
+            onClick={signOut}
+            disabled={signingOut}
+            className="block text-xs uppercase tracking-widest text-muted hover:text-gold-500 transition-colors disabled:opacity-50"
+          >
+            {signingOut ? "Signing out…" : "Sign out"}
+          </button>
+        </div>
+      </aside>
+    </>
   );
 }
 
@@ -134,7 +158,13 @@ export default function Sidebar({
  * the URL (hence the Suspense boundary in the parent) to highlight the current
  * filter; "All" clears it.
  */
-function CategoryNav({ categories }: { categories: string[] }) {
+function CategoryNav({
+  categories,
+  onClose,
+}: {
+  categories: string[];
+  onClose?: () => void;
+}) {
   const current = useSearchParams().get("category");
 
   const linkClass = (selected: boolean) =>
@@ -147,7 +177,7 @@ function CategoryNav({ categories }: { categories: string[] }) {
   return (
     <ul className="mb-1 ml-5 mt-1 space-y-0.5 border-l border-border pl-2">
       <li>
-        <Link href="/products" className={linkClass(!current)}>
+        <Link href="/products" onClick={onClose} className={linkClass(!current)}>
           All
         </Link>
       </li>
@@ -155,6 +185,7 @@ function CategoryNav({ categories }: { categories: string[] }) {
         <li key={category}>
           <Link
             href={`/products?category=${encodeURIComponent(category)}`}
+            onClick={onClose}
             className={linkClass(current === category)}
           >
             {category}
