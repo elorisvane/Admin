@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useTransition } from "react";
 import { createClient } from "@/app/src/lib/supabase/client";
 
 const nav = [
@@ -39,7 +39,11 @@ const nav = [
   },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({
+  categories = [],
+}: {
+  categories?: string[];
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [signingOut, startSignOut] = useTransition();
@@ -97,6 +101,15 @@ export default function Sidebar() {
                     {item.label}
                   </span>
                 </Link>
+
+                {/* Per-category Products sub-nav, shown while on Products. */}
+                {item.href === "/products" &&
+                  active &&
+                  categories.length > 0 && (
+                    <Suspense fallback={null}>
+                      <CategoryNav categories={categories} />
+                    </Suspense>
+                  )}
               </li>
             );
           })}
@@ -113,5 +126,41 @@ export default function Sidebar() {
         </button>
       </div>
     </aside>
+  );
+}
+
+/**
+ * Category links under the Products nav item. Reads the active `?category=` from
+ * the URL (hence the Suspense boundary in the parent) to highlight the current
+ * filter; "All" clears it.
+ */
+function CategoryNav({ categories }: { categories: string[] }) {
+  const current = useSearchParams().get("category");
+
+  const linkClass = (selected: boolean) =>
+    `block rounded-md px-3 py-1.5 text-[11px] uppercase tracking-widest transition-colors ${
+      selected
+        ? "text-gold-600"
+        : "text-muted/80 hover:bg-gold-50 hover:text-foreground"
+    }`;
+
+  return (
+    <ul className="mb-1 ml-5 mt-1 space-y-0.5 border-l border-border pl-2">
+      <li>
+        <Link href="/products" className={linkClass(!current)}>
+          All
+        </Link>
+      </li>
+      {categories.map((category) => (
+        <li key={category}>
+          <Link
+            href={`/products?category=${encodeURIComponent(category)}`}
+            className={linkClass(current === category)}
+          >
+            {category}
+          </Link>
+        </li>
+      ))}
+    </ul>
   );
 }

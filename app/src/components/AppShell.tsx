@@ -7,7 +7,13 @@ import Sidebar from "./Sidebar";
 /** Routes that render without the admin chrome (sidebar + padded main). */
 const BARE_ROUTES = ["/login"];
 
-export default function AppShell({ children }: { children: ReactNode }) {
+export default function AppShell({
+  children,
+  categories = [],
+}: {
+  children: ReactNode;
+  categories?: string[];
+}) {
   const pathname = usePathname();
 
   if (BARE_ROUTES.some((r) => pathname.startsWith(r))) {
@@ -16,7 +22,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <>
-      <Sidebar />
+      <Sidebar categories={categories} />
       <main className="ml-64 min-h-screen px-10 py-10">
         <div className="mx-auto max-w-5xl">{children}</div>
       </main>

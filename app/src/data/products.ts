@@ -53,6 +53,16 @@ export async function getProducts(): Promise<Product[]> {
   return (data ?? []).map(mapProduct);
 }
 
+/** Distinct product categories in the catalogue, alphabetically sorted. */
+export async function getCategories(): Promise<string[]> {
+  const { data, error } = await supabase.from("products").select("category");
+  if (error) throw error;
+  const seen = new Set(
+    (data ?? []).map((r) => (r.category ?? "").trim()).filter(Boolean)
+  );
+  return [...seen].sort((a, b) => a.localeCompare(b));
+}
+
 export async function getProduct(slug: string): Promise<Product | undefined> {
   const { data, error } = await supabase
     .from("products")
