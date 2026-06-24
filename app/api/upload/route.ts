@@ -10,7 +10,11 @@ import { supabaseAdmin } from "@/app/src/lib/supabaseAdmin";
  */
 
 const BUCKET = "media";
-const MAX_BYTES = 25 * 1024 * 1024; // 25MB
+// App-side cap for uploads (large campaign videos / high-res photos). The real
+// ceiling is your Supabase project's global storage "Upload file size limit"
+// (default ~50MB) — raise that in the Supabase dashboard to go beyond it.
+const MAX_MB = 200;
+const MAX_BYTES = MAX_MB * 1024 * 1024;
 
 export const runtime = "nodejs";
 
@@ -34,7 +38,7 @@ export async function POST(request: Request) {
     }
     if (file.size > MAX_BYTES) {
       return NextResponse.json(
-        { error: "File is too large (max 25MB)." },
+        { error: `File is too large (max ${MAX_MB}MB).` },
         { status: 413 },
       );
     }
