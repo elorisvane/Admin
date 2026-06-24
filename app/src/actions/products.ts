@@ -12,6 +12,7 @@ function toRow(p: Product) {
     price: p.price,
     tagline: p.tagline,
     image: p.image,
+    images: p.images,
     description: p.description,
     details: p.details,
     materials: p.materials,

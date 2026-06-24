@@ -8,8 +8,10 @@ export interface Product {
   price: string;
   /** Short line shown under the name in listings. */
   tagline: string;
-  /** Hero / card image. */
+  /** Hero / card image (kept in sync with images[0]). */
   image: string;
+  /** Full photo gallery; the first entry is the cover. */
+  images: string[];
   /** Longer descriptive paragraphs for the product page. */
   description: string[];
   /** Key specifications shown as a detail list. */
@@ -25,12 +27,19 @@ interface ProductRow {
   price: string;
   tagline: string;
   image: string;
+  images: string[] | null;
   description: string[] | null;
   details: { label: string; value: string }[] | null;
   materials: string[] | null;
 }
 
 export function mapProduct(row: ProductRow): Product {
+  // Fall back to the single cover image for rows predating the gallery column.
+  const images = row.images?.length
+    ? row.images
+    : row.image
+      ? [row.image]
+      : [];
   return {
     slug: row.slug,
     name: row.name,
@@ -38,6 +47,7 @@ export function mapProduct(row: ProductRow): Product {
     price: row.price,
     tagline: row.tagline,
     image: row.image,
+    images,
     description: row.description ?? [],
     details: row.details ?? [],
     materials: row.materials ?? [],

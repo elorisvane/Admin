@@ -12,7 +12,7 @@ import {
   Select,
   Textarea,
 } from "@/app/src/components/ui";
-import { Uploader } from "@/app/src/components/Uploader";
+import { ImagesUploader } from "@/app/src/components/ImagesUploader";
 
 const CATEGORIES = [
   "NECKLACE",
@@ -41,10 +41,22 @@ const empty: Product = {
   price: "",
   tagline: "",
   image: "",
+  images: [],
   description: [""],
   details: [{ label: "", value: "" }],
   materials: [""],
 };
+
+/** Seed the gallery from a legacy single `image` when editing older pieces. */
+function toForm(initial?: Product): Product {
+  if (!initial) return empty;
+  const images = initial.images?.length
+    ? initial.images
+    : initial.image
+      ? [initial.image]
+      : [];
+  return { ...initial, images };
+}
 
 function slugify(value: string) {
   return value
@@ -59,7 +71,7 @@ export default function ProductForm({ initial }: { initial?: Product }) {
   const isEdit = Boolean(initial);
   const originalSlug = initial?.slug;
 
-  const [form, setForm] = useState<Product>(initial ?? empty);
+  const [form, setForm] = useState<Product>(() => toForm(initial));
   const [slugTouched, setSlugTouched] = useState(isEdit);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -77,9 +89,13 @@ export default function ProductForm({ initial }: { initial?: Product }) {
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    const images = form.images.filter((u) => u.trim());
     const cleaned: Product = {
       ...form,
       slug: form.slug || slugify(form.name),
+      images,
+      // Keep the single cover image in sync for storefront cards / listings.
+      image: images[0] ?? "",
       description: form.description.filter((d) => d.trim()),
       materials: form.materials.filter((m) => m.trim()),
       details: form.details.filter((d) => d.label.trim() || d.value.trim()),
@@ -160,11 +176,11 @@ export default function ProductForm({ initial }: { initial?: Product }) {
             onChange={(e) => set("tagline", e.target.value)}
           />
         </Field>
-        <Uploader
-          label="Image"
-          hint="Upload the product photo (JPG, PNG or WebP)"
-          value={form.image}
-          onChange={(url) => set("image", url)}
+        <ImagesUploader
+          label="Photos"
+          hint="Upload one or more photos (JPG, PNG or WebP). The first is the cover shown in listings."
+          value={form.images}
+          onChange={(urls) => set("images", urls)}
         />
       </Card>
 
