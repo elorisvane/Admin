@@ -22,6 +22,7 @@ const empty: HomeMedia = {
   title: "",
   subtitle: "",
   alt: "",
+  linkUrl: "",
   sortOrder: 0,
 };
 
@@ -50,6 +51,7 @@ export default function HomeMediaForm({ initial }: { initial?: HomeMedia }) {
       title: form.title.trim(),
       subtitle: form.subtitle.trim(),
       alt: form.alt.trim(),
+      linkUrl: form.linkUrl.trim(),
       sortOrder: Number.isFinite(form.sortOrder) ? form.sortOrder : 0,
     };
     if (!cleaned.src) {
@@ -150,6 +152,17 @@ export default function HomeMediaForm({ initial }: { initial?: HomeMedia }) {
             </Field>
           </div>
         ) : null}
+
+        <Field
+          label="Link URL"
+          hint="Optional — where it opens when clicked (e.g. /products, /products/aurora-diamond-necklace, or https://…)"
+        >
+          <Input
+            value={form.linkUrl}
+            onChange={(e) => set("linkUrl", e.target.value)}
+            placeholder="/products"
+          />
+        </Field>
 
         <div className="grid grid-cols-2 gap-5">
           <Field label="Alt text" hint="Describes the media for accessibility">

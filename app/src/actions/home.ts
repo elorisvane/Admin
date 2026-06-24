@@ -13,6 +13,7 @@ function toRow(m: HomeMedia) {
     title: m.title || null,
     subtitle: m.subtitle || null,
     alt: m.alt || null,
+    link_url: m.linkUrl || null,
     sort_order: m.sortOrder,
     updated_at: new Date().toISOString(),
   };

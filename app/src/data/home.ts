@@ -19,6 +19,8 @@ export interface HomeMedia {
   subtitle: string;
   /** Accessibility / alt text. */
   alt: string;
+  /** Optional click-through URL — makes the item a link on the storefront. */
+  linkUrl: string;
   /** Lower numbers appear first within their placement. */
   sortOrder: number;
 }
@@ -32,6 +34,7 @@ interface HomeMediaRow {
   title: string | null;
   subtitle: string | null;
   alt: string | null;
+  link_url: string | null;
   sort_order: number | null;
 }
 
@@ -45,6 +48,7 @@ export function mapHomeMedia(row: HomeMediaRow): HomeMedia {
     title: row.title ?? "",
     subtitle: row.subtitle ?? "",
     alt: row.alt ?? "",
+    linkUrl: row.link_url ?? "",
     sortOrder: row.sort_order ?? 0,
   };
 }
