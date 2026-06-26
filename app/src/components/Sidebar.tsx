@@ -13,6 +13,11 @@ const nav = [
     icon: "M6 2l1.5 3h9L18 2M4 7h16l-1.2 13H5.2L4 7zM9 11v5m6-5v5",
   },
   {
+    href: "/carts",
+    label: "Shopping Bags",
+    icon: "M6 8h12l-1 12H7L6 8Z M9 8a3 3 0 0 1 6 0",
+  },
+  {
     href: "/home-media",
     label: "Home Media",
     icon: "M3 5h18v14H3zM3 15l5-5 4 4 3-3 6 6",
