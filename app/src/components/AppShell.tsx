@@ -25,7 +25,12 @@ export default function AppShell({
     };
   }, [navOpen]);
 
-  if (BARE_ROUTES.some((r) => pathname.startsWith(r))) {
+  // Printable order documents (…/invoice, …/label) render full-screen too, so
+  // the printout — and the on-screen preview — is just the document.
+  const isBare =
+    BARE_ROUTES.some((r) => pathname.startsWith(r)) ||
+    /\/(invoice|label)$/.test(pathname);
+  if (isBare) {
     return <>{children}</>;
   }
 

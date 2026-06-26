@@ -201,6 +201,24 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
                       </option>
                     ))}
                   </select>
+                  <div className="mt-2 flex gap-3">
+                    <a
+                      href={`/orders/${o.id}/invoice`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] uppercase tracking-widest text-gold-500 transition-colors hover:text-gold-600"
+                    >
+                      Invoice
+                    </a>
+                    <a
+                      href={`/orders/${o.id}/label`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] uppercase tracking-widest text-gold-500 transition-colors hover:text-gold-600"
+                    >
+                      Label
+                    </a>
+                  </div>
                 </td>
               </tr>
             ))}

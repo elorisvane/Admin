@@ -118,3 +118,15 @@ export async function getOrders(): Promise<Order[]> {
   if (error) throw new Error(error.message);
   return (data ?? []).map(mapOrder);
 }
+
+/** A single order by id, or null when it doesn't exist. */
+export async function getOrderById(id: string): Promise<Order | null> {
+  await requireAdmin();
+  const { data, error } = await supabaseAdmin
+    .from("orders")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data ? mapOrder(data as OrderRow) : null;
+}
