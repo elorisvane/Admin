@@ -8,6 +8,11 @@ import { createClient } from "@/app/src/lib/supabase/client";
 const nav = [
   { href: "/", label: "Dashboard", icon: "M3 12l9-9 9 9M5 10v10h14V10" },
   {
+    href: "/orders",
+    label: "Orders",
+    icon: "M6 2l1.5 3h9L18 2M4 7h16l-1.2 13H5.2L4 7zM9 11v5m6-5v5",
+  },
+  {
     href: "/home-media",
     label: "Home Media",
     icon: "M3 5h18v14H3zM3 15l5-5 4 4 3-3 6 6",
@@ -18,14 +23,14 @@ const nav = [
     icon: "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4",
   },
   {
-    href: "/orders",
-    label: "Orders",
-    icon: "M6 2l1.5 3h9L18 2M4 7h16l-1.2 13H5.2L4 7zM9 11v5m6-5v5",
-  },
-  {
     href: "/users",
     label: "Customers",
     icon: "M16 11a4 4 0 10-8 0M3 20c0-3.3 2.7-5 6-5m9 5c0-2-1-3.5-3-4.3M18 9a3 3 0 100-6",
+  },
+  {
+    href: "/wishlists",
+    label: "Saved Creations",
+    icon: "M12 20.5 4.5 13a4.5 4.5 0 0 1 7.5-4.9A4.5 4.5 0 0 1 19.5 13L12 20.5Z",
   },
   {
     href: "/messages",
@@ -94,50 +99,53 @@ export default function Sidebar({
         </div>
 
         <nav className="flex-1 overflow-y-auto px-4 py-6">
-        <ul className="space-y-1">
-          {nav.map((item) => {
-            const active = isActive(item.href);
-            return (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  onClick={onClose}
-                  className={`group flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors ${
-                    active
-                      ? "bg-gold-100 text-gold-600"
-                      : "text-muted hover:bg-gold-50 hover:text-foreground"
-                  }`}
-                >
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+          <ul className="space-y-1">
+            {nav.map((item) => {
+              const active = isActive(item.href);
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    onClick={onClose}
+                    className={`group flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors ${
+                      active
+                        ? "bg-gold-100 text-gold-600"
+                        : "text-muted hover:bg-gold-50 hover:text-foreground"
+                    }`}
                   >
-                    <path d={item.icon} />
-                  </svg>
-                  <span className="tracking-wide uppercase text-xs">
-                    {item.label}
-                  </span>
-                </Link>
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d={item.icon} />
+                    </svg>
+                    <span className="tracking-wide uppercase text-xs">
+                      {item.label}
+                    </span>
+                  </Link>
 
-                {/* Per-category Products sub-nav, shown while on Products. */}
-                {item.href === "/products" &&
-                  active &&
-                  categories.length > 0 && (
-                    <Suspense fallback={null}>
-                      <CategoryNav categories={categories} onClose={onClose} />
-                    </Suspense>
-                  )}
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
+                  {/* Per-category Products sub-nav, shown while on Products. */}
+                  {item.href === "/products" &&
+                    active &&
+                    categories.length > 0 && (
+                      <Suspense fallback={null}>
+                        <CategoryNav
+                          categories={categories}
+                          onClose={onClose}
+                        />
+                      </Suspense>
+                    )}
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
 
         <div className="space-y-3 border-t border-border px-7 py-5">
           <button
@@ -177,7 +185,11 @@ function CategoryNav({
   return (
     <ul className="mb-1 ml-5 mt-1 space-y-0.5 border-l border-border pl-2">
       <li>
-        <Link href="/products" onClick={onClose} className={linkClass(!current)}>
+        <Link
+          href="/products"
+          onClick={onClose}
+          className={linkClass(!current)}
+        >
           All
         </Link>
       </li>
