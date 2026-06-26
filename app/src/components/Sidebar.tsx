@@ -12,11 +12,7 @@ const nav = [
     label: "Orders",
     icon: "M6 2l1.5 3h9L18 2M4 7h16l-1.2 13H5.2L4 7zM9 11v5m6-5v5",
   },
-  {
-    href: "/carts",
-    label: "Shopping Bags",
-    icon: "M6 8h12l-1 12H7L6 8Z M9 8a3 3 0 0 1 6 0",
-  },
+
   {
     href: "/home-media",
     label: "Home Media",
@@ -31,6 +27,11 @@ const nav = [
     href: "/users",
     label: "Customers",
     icon: "M16 11a4 4 0 10-8 0M3 20c0-3.3 2.7-5 6-5m9 5c0-2-1-3.5-3-4.3M18 9a3 3 0 100-6",
+  },
+  {
+    href: "/carts",
+    label: "Shopping Bags",
+    icon: "M6 8h12l-1 12H7L6 8Z M9 8a3 3 0 0 1 6 0",
   },
   {
     href: "/wishlists",
