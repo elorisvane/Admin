@@ -8,7 +8,12 @@ import { Card, Field, Input, Button } from "@/app/src/components/ui";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectedFrom = searchParams.get("redirectedFrom") || "/";
+  // Only honour same-origin absolute paths. Reject protocol-relative ("//evil")
+  // and backslash ("/\\evil") targets that browsers normalise to another host,
+  // which would turn this into an open redirect after a successful sign-in.
+  const rawRedirect = searchParams.get("redirectedFrom");
+  const redirectedFrom =
+    rawRedirect && /^\/(?![/\\])/.test(rawRedirect) ? rawRedirect : "/";
   const forbidden = searchParams.get("error") === "forbidden";
 
   const [email, setEmail] = useState("");
