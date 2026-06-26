@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "../lib/supabaseAdmin";
+import { requireAdmin } from "../lib/auth/requireAdmin";
 
 export interface AppUser {
   id: string;
@@ -15,6 +16,7 @@ export interface AppUser {
  * admin API (`auth.admin.listUsers`), so this runs server-side only.
  */
 export async function getUsers(): Promise<AppUser[]> {
+  await requireAdmin();
   const { data, error } = await supabaseAdmin.auth.admin.listUsers({
     page: 1,
     perPage: 1000,

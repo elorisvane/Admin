@@ -2,9 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { supabaseAdmin } from "../lib/supabaseAdmin";
+import { requireAdmin } from "../lib/auth/requireAdmin";
 import { MESSAGE_STATUSES, type MessageStatus } from "../data/messages";
 
 export async function updateMessageStatus(id: string, status: MessageStatus) {
+  await requireAdmin();
   if (!MESSAGE_STATUSES.includes(status)) {
     throw new Error(`Unknown message status: ${status}`);
   }
@@ -18,6 +20,7 @@ export async function updateMessageStatus(id: string, status: MessageStatus) {
 }
 
 export async function deleteMessage(id: string) {
+  await requireAdmin();
   const { error } = await supabaseAdmin
     .from("contact_messages")
     .delete()

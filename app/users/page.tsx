@@ -1,12 +1,17 @@
 import { getUsers } from "@/app/src/data/users";
 import { getOrders } from "@/app/src/data/orders";
+import { getProfilesById } from "@/app/src/data/profiles";
 import { PageHeader } from "@/app/src/components/ui";
 import UsersTable, { type UserRow } from "@/app/src/components/UsersTable";
 
 export const dynamic = "force-dynamic";
 
 export default async function UsersPage() {
-  const [users, orders] = await Promise.all([getUsers(), getOrders()]);
+  const [users, orders, profiles] = await Promise.all([
+    getUsers(),
+    getOrders(),
+    getProfilesById(),
+  ]);
 
   // Tally each customer's orders by their auth user id.
   const orderCounts = new Map<string, number>();
@@ -14,10 +19,15 @@ export default async function UsersPage() {
     orderCounts.set(o.userId, (orderCounts.get(o.userId) ?? 0) + 1);
   }
 
-  const rows: UserRow[] = users.map((u) => ({
-    ...u,
-    orderCount: orderCounts.get(u.id) ?? 0,
-  }));
+  const rows: UserRow[] = users.map((u) => {
+    const profile = profiles.get(u.id);
+    return {
+      ...u,
+      orderCount: orderCounts.get(u.id) ?? 0,
+      phone: profile?.phone ?? null,
+      marketingOptIn: profile?.marketingOptIn ?? false,
+    };
+  });
 
   return (
     <div>

@@ -29,6 +29,14 @@ function formatDate(iso: string) {
   });
 }
 
+/** One-line summary of an order address, skipping empty parts. */
+function formatAddress(a: Order["shippingAddress"]): string {
+  if (!a) return "";
+  return [a.line1, a.line2, a.city, a.state, a.postalCode, a.country]
+    .filter(Boolean)
+    .join(", ");
+}
+
 /** Small square preview of an ordered piece. */
 function ItemThumb({ src, alt }: { src?: string; alt: string }) {
   return (
@@ -60,6 +68,8 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
     const haystack = [
       o.email,
       o.fullName,
+      o.phone,
+      formatAddress(o.shippingAddress),
       ...o.items.map((i) => `${i.name} ${i.material}`),
     ]
       .join(" ")
@@ -133,6 +143,17 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
                     {o.fullName || "—"}
                   </p>
                   <p className="text-xs text-muted">{o.email}</p>
+                  {o.phone && <p className="text-xs text-muted">{o.phone}</p>}
+                  {o.shippingAddress && (
+                    <p className="mt-1 max-w-[16rem] text-xs text-muted">
+                      {o.shippingAddress.recipientName && (
+                        <span className="block text-foreground">
+                          {o.shippingAddress.recipientName}
+                        </span>
+                      )}
+                      {formatAddress(o.shippingAddress)}
+                    </p>
+                  )}
                 </td>
                 <td className="px-5 py-4">
                   <ul className="space-y-2">

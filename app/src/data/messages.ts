@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "../lib/supabaseAdmin";
+import { requireAdmin } from "../lib/auth/requireAdmin";
 
 export type MessageStatus = "new" | "read" | "archived";
 
@@ -44,6 +45,7 @@ function mapMessage(row: MessageRow): ContactMessage {
  * `contact_messages` has no public SELECT policy, so only the atelier sees them.
  */
 export async function getMessages(): Promise<ContactMessage[]> {
+  await requireAdmin();
   const { data, error } = await supabaseAdmin
     .from("contact_messages")
     .select("*")

@@ -61,9 +61,7 @@ export default async function Dashboard() {
               <p className="mt-3 text-xs uppercase tracking-widest text-muted">
                 {s.label}
               </p>
-              {s.hint && (
-                <p className="mt-1 text-xs text-gold-600">{s.hint}</p>
-              )}
+              {s.hint && <p className="mt-1 text-xs text-gold-600">{s.hint}</p>}
             </Card>
           </Link>
         ))}
@@ -73,8 +71,8 @@ export default async function Dashboard() {
         <Card className="mt-8 px-6 py-5">
           <p className="text-sm text-muted">
             The database is empty. Use{" "}
-            <span className="text-gold-600">Seed sample data</span> above to load
-            the original ÉLORIS catalogue, or add a piece manually.
+            <span className="text-gold-600">Seed sample data</span> above to
+            load the original ÉLORIS catalogue, or add a piece manually.
           </p>
         </Card>
       )}
@@ -161,7 +159,9 @@ export default async function Dashboard() {
                 </li>
               ))}
               {messages.length === 0 && (
-                <li className="px-5 py-4 text-sm text-muted">No messages yet.</li>
+                <li className="px-5 py-4 text-sm text-muted">
+                  No messages yet.
+                </li>
               )}
             </ul>
           </Card>
@@ -193,7 +193,9 @@ export default async function Dashboard() {
                 </li>
               ))}
               {products.length === 0 && (
-                <li className="px-5 py-4 text-sm text-muted">No creations yet.</li>
+                <li className="px-5 py-4 text-sm text-muted">
+                  No creations yet.
+                </li>
               )}
             </ul>
           </Card>
@@ -223,7 +225,9 @@ export default async function Dashboard() {
                 </li>
               ))}
               {posts.length === 0 && (
-                <li className="px-5 py-4 text-sm text-muted">No journal entries yet.</li>
+                <li className="px-5 py-4 text-sm text-muted">
+                  No journal entries yet.
+                </li>
               )}
             </ul>
           </Card>

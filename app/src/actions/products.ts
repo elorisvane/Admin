@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { supabaseAdmin } from "../lib/supabaseAdmin";
+import { requireAdmin } from "../lib/auth/requireAdmin";
 import type { Product } from "../data/products";
 
 function toRow(p: Product) {
@@ -21,6 +22,7 @@ function toRow(p: Product) {
 }
 
 export async function saveProduct(product: Product, originalSlug?: string) {
+  await requireAdmin();
   const row = toRow(product);
   if (originalSlug) {
     // Editing — update in place (also handles a slug rename).
@@ -41,6 +43,7 @@ export async function saveProduct(product: Product, originalSlug?: string) {
 }
 
 export async function deleteProduct(slug: string) {
+  await requireAdmin();
   const { error } = await supabaseAdmin.from("products").delete().eq("slug", slug);
   if (error) throw new Error(error.message);
   revalidatePath("/");

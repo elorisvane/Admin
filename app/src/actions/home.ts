@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { supabaseAdmin } from "../lib/supabaseAdmin";
+import { requireAdmin } from "../lib/auth/requireAdmin";
 import type { HomeMedia } from "../data/home";
 
 function toRow(m: HomeMedia) {
@@ -20,6 +21,7 @@ function toRow(m: HomeMedia) {
 }
 
 export async function saveHomeMedia(media: HomeMedia, originalId?: string) {
+  await requireAdmin();
   const row = toRow(media);
   if (originalId) {
     // Editing — update in place.
@@ -38,6 +40,7 @@ export async function saveHomeMedia(media: HomeMedia, originalId?: string) {
 }
 
 export async function deleteHomeMedia(id: string) {
+  await requireAdmin();
   const { error } = await supabaseAdmin
     .from("home_media")
     .delete()

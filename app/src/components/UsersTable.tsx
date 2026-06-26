@@ -6,6 +6,8 @@ import { Card, Input } from "@/app/src/components/ui";
 
 export interface UserRow extends AppUser {
   orderCount: number;
+  phone: string | null;
+  marketingOptIn: boolean;
 }
 
 function formatDate(iso: string | null) {
@@ -21,7 +23,7 @@ export default function UsersTable({ users }: { users: UserRow[] }) {
   const [query, setQuery] = useState("");
 
   const filtered = users.filter((u) =>
-    `${u.fullName ?? ""} ${u.email ?? ""}`
+    `${u.fullName ?? ""} ${u.email ?? ""} ${u.phone ?? ""}`
       .toLowerCase()
       .includes(query.toLowerCase()),
   );
@@ -55,6 +57,12 @@ export default function UsersTable({ users }: { users: UserRow[] }) {
                     {u.fullName || "—"}
                   </p>
                   <p className="text-xs text-muted">{u.email}</p>
+                  {u.phone && <p className="text-xs text-muted">{u.phone}</p>}
+                  {u.marketingOptIn && (
+                    <span className="mt-1 inline-block rounded-full bg-gold-50 px-2 py-0.5 text-[10px] uppercase tracking-widest text-gold-600">
+                      Newsletter
+                    </span>
+                  )}
                 </td>
                 <td className="whitespace-nowrap px-5 py-4 text-muted">
                   {formatDate(u.createdAt)}

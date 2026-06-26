@@ -2,10 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { supabaseAdmin } from "../lib/supabaseAdmin";
+import { requireAdmin } from "../lib/auth/requireAdmin";
 import { seedProducts, seedPosts } from "../data/seed";
 
 /** Upserts the original sample catalogue. Safe to run more than once. */
 export async function seedDatabase() {
+  await requireAdmin();
   const productRows = seedProducts.map((p, i) => ({
     slug: p.slug,
     name: p.name,

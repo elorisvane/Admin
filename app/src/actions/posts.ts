@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { supabaseAdmin } from "../lib/supabaseAdmin";
+import { requireAdmin } from "../lib/auth/requireAdmin";
 import type { Post } from "../data/posts";
 
 function toRow(p: Post) {
@@ -19,6 +20,7 @@ function toRow(p: Post) {
 }
 
 export async function savePost(post: Post, originalSlug?: string) {
+  await requireAdmin();
   const row = toRow(post);
   if (originalSlug) {
     const { error } = await supabaseAdmin
@@ -37,6 +39,7 @@ export async function savePost(post: Post, originalSlug?: string) {
 }
 
 export async function deletePost(slug: string) {
+  await requireAdmin();
   const { error } = await supabaseAdmin.from("posts").delete().eq("slug", slug);
   if (error) throw new Error(error.message);
   revalidatePath("/");

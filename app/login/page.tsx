@@ -9,6 +9,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectedFrom = searchParams.get("redirectedFrom") || "/";
+  const forbidden = searchParams.get("error") === "forbidden";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,6 +37,13 @@ function LoginForm() {
   return (
     <Card className="px-8 py-9">
       <form onSubmit={onSubmit} className="space-y-5">
+        {forbidden && (
+          <p className="text-xs text-red-500">
+            This account doesn’t have atelier admin access. Sign in with an
+            authorized admin account.
+          </p>
+        )}
+
         <Field label="Email">
           <Input
             type="email"

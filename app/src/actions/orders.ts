@@ -2,9 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { supabaseAdmin } from "../lib/supabaseAdmin";
+import { requireAdmin } from "../lib/auth/requireAdmin";
 import { ORDER_STATUSES, type OrderStatus } from "../data/orders";
 
 export async function updateOrderStatus(id: string, status: OrderStatus) {
+  await requireAdmin();
   if (!ORDER_STATUSES.includes(status)) {
     throw new Error(`Unknown order status: ${status}`);
   }
