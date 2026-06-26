@@ -39,6 +39,11 @@ const nav = [
     icon: "M12 20.5 4.5 13a4.5 4.5 0 0 1 7.5-4.9A4.5 4.5 0 0 1 19.5 13L12 20.5Z",
   },
   {
+    href: "/reviews",
+    label: "Reviews",
+    icon: "M12 2l2.9 6.1 6.6.9-4.8 4.6 1.2 6.6L12 17.8 6 21l1.2-6.6L2.4 9l6.6-.9L12 2z",
+  },
+  {
     href: "/messages",
     label: "Messages",
     icon: "M3 5h18v12H7l-4 4V5z",
