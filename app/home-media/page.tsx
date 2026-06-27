@@ -12,7 +12,7 @@ export default async function HomeMediaPage() {
     <div>
       <PageHeader
         title="Home media"
-        subtitle={`${items.length} images & videos on the storefront home page`}
+        subtitle={`${items.length} images & videos across the storefront`}
         action={
           <Link href="/home-media/new">
             <Button>+ New media</Button>

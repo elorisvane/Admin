@@ -18,7 +18,20 @@ const GROUPS: { placement: Placement; label: string; blurb: string }[] = [
     label: "Gallery strip",
     blurb: "The horizontal image strip near the bottom of the home page.",
   },
+  {
+    placement: "products_hero",
+    label: "Products — hero banner",
+    blurb: "The large banner at the top of the Creations (products) page.",
+  },
+  {
+    placement: "products_grid",
+    label: "Products — lifestyle banner",
+    blurb: "The lifestyle card inside the products grid (supports a caption).",
+  },
 ];
+
+/** Placements that carry a title/subtitle caption. */
+const CAPTIONED: Placement[] = ["campaign", "products_grid"];
 
 export default function HomeMediaTable({ items }: { items: HomeMedia[] }) {
   const router = useRouter();
@@ -65,7 +78,9 @@ export default function HomeMediaTable({ items }: { items: HomeMedia[] }) {
                     <th className="px-5 py-3 font-medium">Order</th>
                     <th className="px-5 py-3 font-medium">Type</th>
                     <th className="px-5 py-3 font-medium">
-                      {group.placement === "campaign" ? "Title / source" : "Source"}
+                      {CAPTIONED.includes(group.placement)
+                        ? "Title / source"
+                        : "Source"}
                     </th>
                     <th className="px-5 py-3" />
                   </tr>

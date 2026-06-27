@@ -38,7 +38,9 @@ export default function HomeMediaForm({ initial }: { initial?: HomeMedia }) {
   const set = <K extends keyof HomeMedia>(key: K, value: HomeMedia[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
 
-  const isCampaign = form.placement === "campaign";
+  // Campaign sections and the products-page lifestyle banner show a caption.
+  const showCaption =
+    form.placement === "campaign" || form.placement === "products_grid";
   const isVideo = form.mediaType === "video";
 
   const submit = (e: React.FormEvent) => {
@@ -94,8 +96,10 @@ export default function HomeMediaForm({ initial }: { initial?: HomeMedia }) {
                 set("placement", e.target.value as HomeMedia["placement"])
               }
             >
-              <option value="campaign">Campaign section (full screen)</option>
-              <option value="gallery">Gallery strip (bottom)</option>
+              <option value="campaign">Home — campaign section (full screen)</option>
+              <option value="gallery">Home — gallery strip (bottom)</option>
+              <option value="products_hero">Products — top hero banner</option>
+              <option value="products_grid">Products — in-grid lifestyle banner</option>
             </Select>
           </Field>
           <Field label="Media type">
@@ -134,7 +138,7 @@ export default function HomeMediaForm({ initial }: { initial?: HomeMedia }) {
       </Card>
 
       <Card className="space-y-5 p-6">
-        {isCampaign ? (
+        {showCaption ? (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <Field label="Title" hint="Caption shown over the artwork">
               <Input

@@ -1,6 +1,10 @@
 import { supabase } from "../lib/supabase";
 
-export type Placement = "campaign" | "gallery";
+export type Placement =
+  | "campaign"
+  | "gallery"
+  | "products_hero"
+  | "products_grid";
 export type MediaType = "image" | "video";
 
 export interface HomeMedia {
