@@ -9,6 +9,8 @@ export interface AppUser {
   lastSignInAt: string | null;
   /** Whether the email has been confirmed. */
   confirmed: boolean;
+  /** Sign-in methods linked to the account, e.g. ["email"], ["google"], or both. */
+  providers: string[];
 }
 
 /**
@@ -26,6 +28,16 @@ export async function getUsers(): Promise<AppUser[]> {
   return data.users
     .map((u) => {
       const meta = u.user_metadata as { full_name?: string } | undefined;
+      // Collect every linked sign-in method from app_metadata + identities.
+      const appMeta = u.app_metadata as
+        | { provider?: string; providers?: string[] }
+        | undefined;
+      const providerSet = new Set<string>();
+      (appMeta?.providers ?? []).forEach((p) => p && providerSet.add(p));
+      if (appMeta?.provider) providerSet.add(appMeta.provider);
+      (u.identities ?? []).forEach(
+        (i) => i.provider && providerSet.add(i.provider),
+      );
       return {
         id: u.id,
         email: u.email ?? null,
@@ -33,6 +45,7 @@ export async function getUsers(): Promise<AppUser[]> {
         createdAt: u.created_at,
         lastSignInAt: u.last_sign_in_at ?? null,
         confirmed: Boolean(u.email_confirmed_at),
+        providers: [...providerSet],
       };
     })
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
