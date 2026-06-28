@@ -2,22 +2,28 @@
 
 import { useRef, useState } from "react";
 
+const VIDEO_RE = /\.(mp4|webm|mov)(\?.*)?$/i;
+const isVideo = (url: string) => VIDEO_RE.test(url);
+
 /**
- * Multi-image upload field. Uploads each chosen file to Supabase Storage via the
- * `/api/upload` route (same as {@link Uploader}) and keeps an ordered gallery in
- * `value`. The first image is the cover; items can be reordered to the front or
- * removed. Used by the product editor so a piece can have several photos.
+ * Multi-media upload field. Uploads each chosen file (image or video) to
+ * Supabase Storage via the `/api/upload` route and keeps an ordered gallery in
+ * `value`. Items can be reordered to the front or removed. With `showCover`
+ * (default) the first item is badged as the cover. Used by the product editor.
  */
 export function ImagesUploader({
   value,
   onChange,
   label,
   hint,
+  showCover = true,
 }: {
   value: string[];
   onChange: (urls: string[]) => void;
   label?: string;
   hint?: string;
+  /** Badge the first item as "Cover" and label the reorder action accordingly. */
+  showCover?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -74,10 +80,20 @@ export function ImagesUploader({
             key={`${url}-${i}`}
             className="group relative h-28 w-28 shrink-0 overflow-hidden rounded-md border border-border bg-neutral-100"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={url} alt="" className="h-full w-full object-cover" />
+            {isVideo(url) ? (
+              <video
+                src={url}
+                muted
+                playsInline
+                preload="metadata"
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img src={url} alt="" className="h-full w-full object-cover" />
+            )}
 
-            {i === 0 && (
+            {showCover && i === 0 && (
               <span className="absolute left-1 top-1 rounded bg-gold-500 px-1.5 py-0.5 text-[9px] uppercase tracking-widest text-white">
                 Cover
               </span>
@@ -98,7 +114,7 @@ export function ImagesUploader({
                 onClick={() => makeCover(i)}
                 className="absolute inset-x-0 bottom-0 bg-black/60 py-1 text-[9px] uppercase tracking-widest text-white opacity-0 transition-opacity hover:bg-black/80 group-hover:opacity-100"
               >
-                Make cover
+                {showCover ? "Make cover" : "Move to front"}
               </button>
             )}
           </div>
@@ -111,13 +127,13 @@ export function ImagesUploader({
           disabled={uploading}
           className="flex h-28 w-28 shrink-0 flex-col items-center justify-center gap-1 rounded-md border border-dashed border-border text-[10px] uppercase tracking-widest text-muted transition-colors hover:border-gold-400 hover:text-gold-600 disabled:opacity-50"
         >
-          {uploading ? "Uploading…" : "+ Add photos"}
+          {uploading ? "Uploading…" : "+ Add media"}
         </button>
 
         <input
           ref={inputRef}
           type="file"
-          accept="image/*"
+          accept="image/*,video/*"
           multiple
           onChange={onFiles}
           className="hidden"

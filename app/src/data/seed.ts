@@ -2,9 +2,12 @@ import type { Product } from "./products";
 import type { Post } from "./posts";
 
 // Original sample catalogue — used once to seed an empty database. Galleries
-// (`images`) are omitted here: the DB column defaults to `[]` and the storefront
-// falls back to the single cover `image`.
-export const seedProducts: Omit<Product, "images">[] = [
+// (`images`, `modelMedia`, `bannerMedia`) are omitted here: those DB columns
+// default to `[]` and the storefront falls back to the single cover `image`.
+export const seedProducts: Omit<
+  Product,
+  "images" | "modelMedia" | "bannerMedia"
+>[] = [
   {
     slug: "aurora-diamond-necklace",
     name: "Aurora Diamond Necklace",

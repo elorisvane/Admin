@@ -14,6 +14,8 @@ function toRow(p: Product) {
     tagline: p.tagline,
     image: p.image,
     images: p.images,
+    model_media: p.modelMedia,
+    banner_media: p.bannerMedia,
     description: p.description,
     details: p.details,
     materials: p.materials,

@@ -10,8 +10,13 @@ export interface Product {
   tagline: string;
   /** Hero / card image (kept in sync with images[0]). */
   image: string;
-  /** Full photo gallery; the first entry is the cover. */
+  /** Jewelry-only gallery (photos + videos); the first entry is the cover. */
   images: string[];
+  /** Jewelry-with-model (lifestyle) gallery — photos + videos. Fills the
+   *  storefront lifestyle row. */
+  modelMedia: string[];
+  /** Full-width banner gallery — photos + videos shown as banners on the page. */
+  bannerMedia: string[];
   /** Longer descriptive paragraphs for the product page. */
   description: string[];
   /** Key specifications shown as a detail list. */
@@ -28,6 +33,8 @@ interface ProductRow {
   tagline: string;
   image: string;
   images: string[] | null;
+  model_media: string[] | null;
+  banner_media: string[] | null;
   description: string[] | null;
   details: { label: string; value: string }[] | null;
   materials: string[] | null;
@@ -48,6 +55,8 @@ export function mapProduct(row: ProductRow): Product {
     tagline: row.tagline,
     image: row.image,
     images,
+    modelMedia: row.model_media ?? [],
+    bannerMedia: row.banner_media ?? [],
     description: row.description ?? [],
     details: row.details ?? [],
     materials: row.materials ?? [],

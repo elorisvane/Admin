@@ -15,12 +15,12 @@ import {
 import { ImagesUploader } from "@/app/src/components/ImagesUploader";
 
 const CATEGORIES = [
-  "NECKLACE",
-  "BRACELET",
-  "EARRING",
-  "BROOCH",
-  "WATCH",
-  "RING",
+  "Necklace",
+  "Bracelet",
+  "Earring",
+  "Brooch",
+  "Watch",
+  "Ring",
 ] as const;
 
 const MATERIAL_PRESETS = [
@@ -42,6 +42,8 @@ const empty: Product = {
   tagline: "",
   image: "",
   images: [],
+  modelMedia: [],
+  bannerMedia: [],
   description: [""],
   details: [{ label: "", value: "" }],
   materials: [""],
@@ -55,7 +57,12 @@ function toForm(initial?: Product): Product {
     : initial.image
       ? [initial.image]
       : [];
-  return { ...initial, images };
+  return {
+    ...initial,
+    images,
+    modelMedia: initial.modelMedia ?? [],
+    bannerMedia: initial.bannerMedia ?? [],
+  };
 }
 
 function slugify(value: string) {
@@ -94,6 +101,8 @@ export default function ProductForm({ initial }: { initial?: Product }) {
       ...form,
       slug: form.slug || slugify(form.name),
       images,
+      modelMedia: form.modelMedia.filter((u) => u.trim()),
+      bannerMedia: form.bannerMedia.filter((u) => u.trim()),
       // Keep the single cover image in sync for storefront cards / listings.
       image: images[0] ?? "",
       description: form.description.filter((d) => d.trim()),
@@ -177,10 +186,24 @@ export default function ProductForm({ initial }: { initial?: Product }) {
           />
         </Field>
         <ImagesUploader
-          label="Photos"
-          hint="Upload one or more photos (JPG, PNG or WebP). The first is the cover shown in listings."
+          label="Jewelry photos & videos"
+          hint="Jewelry-only shots (JPG, PNG, WebP, AVIF, GIF or MP4/WebM/MOV). The first is the cover shown in listings and the product hero."
           value={form.images}
           onChange={(urls) => set("images", urls)}
+        />
+        <ImagesUploader
+          label="Jewelry with model (lifestyle)"
+          hint="Worn-on-model shots — photos or videos. Shown as the lifestyle row on the product page."
+          value={form.modelMedia}
+          onChange={(urls) => set("modelMedia", urls)}
+          showCover={false}
+        />
+        <ImagesUploader
+          label="Banners (photos & videos)"
+          hint="Full-width banner media — photos or videos. Each one renders as a full-width banner on the product page."
+          value={form.bannerMedia}
+          onChange={(urls) => set("bannerMedia", urls)}
+          showCover={false}
         />
       </Card>
 
