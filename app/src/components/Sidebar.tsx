@@ -19,6 +19,11 @@ const nav = [
     icon: "M3 5h18v14H3zM3 15l5-5 4 4 3-3 6 6",
   },
   {
+    href: "/nav-menu",
+    label: "Menu & Categories",
+    icon: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
+  },
+  {
     href: "/products",
     label: "Products",
     icon: "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4",
