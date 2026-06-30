@@ -5,6 +5,10 @@ import { getCategories } from "@/app/src/data/products";
 
 export const metadata: Metadata = {
   title: "ÉLORIS · Atelier Admin",
+  icons: {
+    icon: "/tab-icon.svg",
+    apple: "/tab-icon.svg",
+  },
   description: "Manage the ÉLORIS storefront — products and journal.",
 };
 
