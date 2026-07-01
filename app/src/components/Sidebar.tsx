@@ -8,6 +8,11 @@ import { createClient } from "@/app/src/lib/supabase/client";
 const nav = [
   { href: "/", label: "Dashboard", icon: "M3 12l9-9 9 9M5 10v10h14V10" },
   {
+    href: "/coming-soon",
+    label: "Site Availability",
+    icon: "M18.4 5.6a9 9 0 1 1-12.8 0M12 2v8",
+  },
+  {
     href: "/orders",
     label: "Orders",
     icon: "M6 2l1.5 3h9L18 2M4 7h16l-1.2 13H5.2L4 7zM9 11v5m6-5v5",
