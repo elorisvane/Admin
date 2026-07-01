@@ -10,6 +10,7 @@ function toRow(p: Product) {
     slug: p.slug,
     name: p.name,
     category: p.category,
+    subcategory: p.subcategory,
     price: p.price,
     tagline: p.tagline,
     image: p.image,

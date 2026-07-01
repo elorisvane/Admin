@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import type { Product } from "@/app/src/data/products";
+import type { NavCategory } from "@/app/src/data/nav";
 import { saveProduct, deleteProduct } from "@/app/src/actions/products";
 import {
   Button,
@@ -13,15 +14,6 @@ import {
   Textarea,
 } from "@/app/src/components/ui";
 import { ImagesUploader } from "@/app/src/components/ImagesUploader";
-
-const CATEGORIES = [
-  "Necklace",
-  "Bracelet",
-  "Earring",
-  "Brooch",
-  "Watch",
-  "Ring",
-] as const;
 
 const MATERIAL_PRESETS = [
   "18kt White Gold",
@@ -38,6 +30,7 @@ const empty: Product = {
   slug: "",
   name: "",
   category: "",
+  subcategory: "",
   price: "",
   tagline: "",
   image: "",
@@ -73,7 +66,14 @@ function slugify(value: string) {
     .replace(/^-+|-+$/g, "");
 }
 
-export default function ProductForm({ initial }: { initial?: Product }) {
+export default function ProductForm({
+  initial,
+  categories,
+}: {
+  initial?: Product;
+  /** Live "Menu & Categories" taxonomy — the source of the Category / Sub-category options. */
+  categories: NavCategory[];
+}) {
   const router = useRouter();
   const isEdit = Boolean(initial);
   const originalSlug = initial?.slug;
@@ -85,6 +85,18 @@ export default function ProductForm({ initial }: { initial?: Product }) {
 
   const set = <K extends keyof Product>(key: K, value: Product[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
+
+  // Sub-category options follow the chosen top-level category.
+  const activeCategory = categories.find((c) => c.label === form.category);
+  const subcategories = activeCategory?.subcategories ?? [];
+
+  // Picking a category clears a sub-category that no longer belongs to it.
+  const onCategory = (category: string) =>
+    setForm((f) => {
+      const next = categories.find((c) => c.label === category);
+      const keep = next?.subcategories.some((s) => s.label === f.subcategory);
+      return { ...f, category, subcategory: keep ? f.subcategory : "" };
+    });
 
   const onName = (name: string) =>
     setForm((f) => ({
@@ -155,21 +167,50 @@ export default function ProductForm({ initial }: { initial?: Product }) {
               required
             />
           </Field>
-          <Field label="Category">
+          <Field label="Category" hint="Managed in Menu & Categories">
             <Select
               value={form.category}
-              onChange={(e) => set("category", e.target.value)}
+              onChange={(e) => onCategory(e.target.value)}
             >
               <option value="">Select a category…</option>
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
+              {categories.map((c) => (
+                <option key={c.id} value={c.label}>
+                  {c.label}
                 </option>
               ))}
               {form.category &&
-                !CATEGORIES.includes(
-                  form.category as (typeof CATEGORIES)[number],
-                ) && <option value={form.category}>{form.category}</option>}
+                !categories.some((c) => c.label === form.category) && (
+                  <option value={form.category}>{form.category}</option>
+                )}
+            </Select>
+          </Field>
+          <Field
+            label="Sub-category"
+            hint={
+              !form.category
+                ? "Pick a category first"
+                : subcategories.length
+                  ? undefined
+                  : "This category has no sub-categories"
+            }
+          >
+            <Select
+              value={form.subcategory}
+              onChange={(e) => set("subcategory", e.target.value)}
+              disabled={!form.category || subcategories.length === 0}
+            >
+              <option value="">
+                {subcategories.length ? "Select a sub-category…" : "—"}
+              </option>
+              {subcategories.map((s, i) => (
+                <option key={`${s.label}-${i}`} value={s.label}>
+                  {s.label}
+                </option>
+              ))}
+              {form.subcategory &&
+                !subcategories.some((s) => s.label === form.subcategory) && (
+                  <option value={form.subcategory}>{form.subcategory}</option>
+                )}
             </Select>
           </Field>
           <Field label="Price" hint="Pre-formatted, e.g. $48,500">

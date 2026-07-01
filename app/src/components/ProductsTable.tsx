@@ -15,7 +15,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   const [pending, startTransition] = useTransition();
 
   const filtered = products.filter((p) =>
-    `${p.name} ${p.category} ${p.tagline}`
+    `${p.name} ${p.category} ${p.subcategory} ${p.tagline}`
       .toLowerCase()
       .includes(query.toLowerCase())
   );
@@ -78,6 +78,9 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                 <td className="px-5 py-4">
                   <span className="text-xs uppercase tracking-wider text-muted">
                     {p.category}
+                    {p.subcategory && (
+                      <span className="text-muted/60"> · {p.subcategory}</span>
+                    )}
                   </span>
                 </td>
                 <td className="px-5 py-4 text-foreground">{p.price}</td>

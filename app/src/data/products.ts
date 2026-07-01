@@ -3,7 +3,10 @@ import { supabase } from "../lib/supabase";
 export interface Product {
   slug: string;
   name: string;
+  /** Top-level menu group, e.g. "HIGH JEWELLERY" (from the Menu & Categories taxonomy). */
   category: string;
+  /** Sub-item of the chosen category, e.g. "NECKLACE" (blank if the group has none). */
+  subcategory: string;
   /** Display price, pre-formatted (these are made-to-order pieces). */
   price: string;
   /** Short line shown under the name in listings. */
@@ -29,6 +32,7 @@ interface ProductRow {
   slug: string;
   name: string;
   category: string;
+  subcategory: string | null;
   price: string;
   tagline: string;
   image: string;
@@ -51,6 +55,7 @@ export function mapProduct(row: ProductRow): Product {
     slug: row.slug,
     name: row.name,
     category: row.category,
+    subcategory: row.subcategory ?? "",
     price: row.price,
     tagline: row.tagline,
     image: row.image,

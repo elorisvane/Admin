@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getProduct } from "@/app/src/data/products";
+import { getNavCategories } from "@/app/src/data/nav";
 import ProductForm from "@/app/src/components/ProductForm";
 import { PageHeader } from "@/app/src/components/ui";
 
@@ -11,7 +12,10 @@ export default async function Page({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const product = await getProduct(slug);
+  const [product, categories] = await Promise.all([
+    getProduct(slug),
+    getNavCategories(),
+  ]);
 
   if (!product) {
     return (
@@ -27,7 +31,7 @@ export default async function Page({
   return (
     <div>
       <PageHeader title={product.name} subtitle="Edit this creation." />
-      <ProductForm initial={product} />
+      <ProductForm initial={product} categories={categories} />
     </div>
   );
 }
