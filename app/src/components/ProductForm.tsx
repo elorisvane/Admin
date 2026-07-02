@@ -66,6 +66,12 @@ function slugify(value: string) {
     .replace(/^-+|-+$/g, "");
 }
 
+/** Whole-dollar amount with thousands separators, e.g. "$48,500" ("" when empty). */
+function toPrice(value: string): string {
+  const digits = value.replace(/[^0-9]/g, "");
+  return digits ? `$${Number(digits).toLocaleString("en-US")}` : "";
+}
+
 export default function ProductForm({
   initial,
   categories,
@@ -213,11 +219,22 @@ export default function ProductForm({
                 )}
             </Select>
           </Field>
-          <Field label="Price" hint="Pre-formatted, e.g. $48,500">
-            <Input
-              value={form.price}
-              onChange={(e) => set("price", e.target.value)}
-            />
+          <Field
+            label="Price"
+            hint="Whole dollars — the $ and commas are added for you"
+          >
+            <div className="relative">
+              <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-muted">
+                $
+              </span>
+              <Input
+                className="pl-7"
+                inputMode="numeric"
+                placeholder="0"
+                value={form.price.replace(/^\$/, "")}
+                onChange={(e) => set("price", toPrice(e.target.value))}
+              />
+            </div>
           </Field>
         </div>
         <Field label="Tagline">
