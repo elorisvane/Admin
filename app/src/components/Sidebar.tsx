@@ -59,6 +59,11 @@ const nav = [
     icon: "M3 5h18v12H7l-4 4V5z",
   },
   {
+    href: "/newsletter",
+    label: "Newsletter",
+    icon: "M3 6h18v12H3zM4 7l8 6 8-6",
+  },
+  {
     href: "/blog",
     label: "Journal",
     icon: "M4 5h16M4 12h16M4 19h10",
