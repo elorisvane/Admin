@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import sharp from "sharp";
 import { supabaseAdmin } from "@/app/src/lib/supabaseAdmin";
 import { requireAdmin } from "@/app/src/lib/auth/requireAdmin";
 
@@ -20,6 +21,47 @@ const BUCKET = "media";
 // (default ~50MB) — raise that in the Supabase dashboard to go beyond it.
 const MAX_MB = 200;
 const MAX_BYTES = MAX_MB * 1024 * 1024;
+
+// Photos are downscaled + re-encoded to WebP before storage so the storefront
+// serves far fewer bytes (cuts Supabase "egress"). Uploaded files are immutable
+// (random UUID names), so they can be cached effectively forever.
+const MAX_DIMENSION = 2400; // px — cap the longest side
+const WEBP_QUALITY = 82;
+const ONE_YEAR = "31536000";
+
+/**
+ * Downscale + re-encode large raster photos to WebP to shrink what the
+ * storefront serves. Video, GIF (often animated) and AVIF (already efficient)
+ * pass through untouched, as does anything smaller than the WebP result or that
+ * fails to decode.
+ */
+async function compressImage(
+  bytes: Uint8Array,
+  type: string,
+): Promise<{ bytes: Uint8Array; type: string }> {
+  if (type !== "image/jpeg" && type !== "image/png" && type !== "image/webp") {
+    return { bytes, type };
+  }
+  try {
+    const out = await sharp(Buffer.from(bytes), { failOn: "none" })
+      // Honour EXIF orientation before the metadata is stripped on re-encode.
+      .rotate()
+      .resize({
+        width: MAX_DIMENSION,
+        height: MAX_DIMENSION,
+        fit: "inside",
+        withoutEnlargement: true,
+      })
+      .webp({ quality: WEBP_QUALITY })
+      .toBuffer();
+    // Never inflate an already-optimised asset.
+    return out.length < bytes.length
+      ? { bytes: out, type: "image/webp" }
+      : { bytes, type };
+  } catch {
+    return { bytes, type };
+  }
+}
 
 // Only real media is accepted. The bucket is public, so allowing HTML/SVG/JS
 // here would turn storage into a host for stored-XSS / phishing pages served
@@ -123,16 +165,20 @@ export async function POST(request: Request) {
         { status: 415 },
       );
     }
-    const ext = ALLOWED_TYPES.get(detected)!;
+    // Shrink large photos before storing (leaves video/GIF/AVIF as-is).
+    const media = await compressImage(bytes, detected);
+    const ext = ALLOWED_TYPES.get(media.type)!;
 
     await ensureBucket();
 
     const path = `${crypto.randomUUID()}.${ext}`;
     const { error } = await supabaseAdmin.storage
       .from(BUCKET)
-      .upload(path, bytes, {
+      .upload(path, media.bytes, {
         // Store the server-verified type, never the client's claim.
-        contentType: detected,
+        contentType: media.type,
+        // Immutable filenames → cache aggressively to cut repeat egress.
+        cacheControl: ONE_YEAR,
         upsert: false,
       });
     if (error) {
