@@ -54,7 +54,7 @@ export default function NavCategoriesTable({
                 <td className="px-5 py-4">
                   <Link
                     href={`/nav-menu/edit/${c.id}`}
-                    className="font-medium uppercase tracking-wide text-foreground hover:text-gold-600"
+                    className="font-medium tracking-wide text-foreground hover:text-gold-600"
                   >
                     {c.label}
                   </Link>
@@ -70,7 +70,7 @@ export default function NavCategoriesTable({
                       {c.subcategories.map((s, i) => (
                         <span
                           key={`${s.label}-${i}`}
-                          className="rounded-full border border-border px-2.5 py-0.5 text-[11px] uppercase tracking-wider text-muted"
+                          className="rounded-full border border-border px-2.5 py-0.5 text-[11px] tracking-wider text-muted"
                         >
                           {s.label || "Untitled"}
                         </span>
