@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import sharp from "sharp";
 import { supabaseAdmin } from "@/app/src/lib/supabaseAdmin";
 import { requireAdmin } from "@/app/src/lib/auth/requireAdmin";
 
@@ -43,6 +42,12 @@ async function compressImage(
     return { bytes, type };
   }
   try {
+    // Loaded lazily (not a top-level import) so a missing/incompatible native
+    // binary on the deploy target — e.g. the linux/musl `@img/sharp-*` package
+    // wasn't installed because node_modules came from another platform — degrades
+    // to "store the original file" instead of crashing the whole route at import
+    // time, which surfaced to the client as an opaque "Upload failed (500)".
+    const sharp = (await import("sharp")).default;
     const out = await sharp(Buffer.from(bytes), { failOn: "none" })
       // Honour EXIF orientation before the metadata is stripped on re-encode.
       .rotate()
@@ -58,7 +63,13 @@ async function compressImage(
     return out.length < bytes.length
       ? { bytes: out, type: "image/webp" }
       : { bytes, type };
-  } catch {
+  } catch (err) {
+    // Storing the original is fine; log so a broken sharp install on the server
+    // (which silently disables compression + inflates egress) stays discoverable.
+    console.warn(
+      "[upload] image compression skipped (sharp unavailable or failed):",
+      err instanceof Error ? err.message : err,
+    );
     return { bytes, type };
   }
 }
@@ -188,6 +199,7 @@ export async function POST(request: Request) {
     const { data } = supabaseAdmin.storage.from(BUCKET).getPublicUrl(path);
     return NextResponse.json({ url: data.publicUrl });
   } catch (err) {
+    console.error("[upload] failed:", err);
     const message = err instanceof Error ? err.message : "Upload failed";
     return NextResponse.json({ error: message }, { status: 500 });
   }
