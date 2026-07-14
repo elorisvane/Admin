@@ -7,6 +7,13 @@ import Sidebar from "./Sidebar";
 /** Routes that render without the admin chrome (sidebar + padded main). */
 const BARE_ROUTES = ["/login"];
 
+/**
+ * Routes that keep the sidebar but drop the centred, padded column. Live View
+ * is a two-pane screen whose globe runs to the edge of the viewport, which the
+ * shared `max-w-5xl` wrapper would otherwise box in.
+ */
+const FULL_BLEED_ROUTES = ["/live-view"];
+
 export default function AppShell({
   children,
   categories = [],
@@ -34,6 +41,8 @@ export default function AppShell({
     return <>{children}</>;
   }
 
+  const isFullBleed = FULL_BLEED_ROUTES.some((r) => pathname.startsWith(r));
+
   return (
     <>
       <Sidebar
@@ -43,9 +52,13 @@ export default function AppShell({
       />
       <div className="lg:ml-64">
         <MobileTopBar onMenu={() => setNavOpen(true)} />
-        <main className="min-h-screen px-4 py-6 sm:px-6 lg:px-10 lg:py-10">
-          <div className="mx-auto max-w-5xl">{children}</div>
-        </main>
+        {isFullBleed ? (
+          <main className="min-h-screen">{children}</main>
+        ) : (
+          <main className="min-h-screen px-4 py-6 sm:px-6 lg:px-10 lg:py-10">
+            <div className="mx-auto max-w-5xl">{children}</div>
+          </main>
+        )}
       </div>
     </>
   );
