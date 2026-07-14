@@ -85,7 +85,8 @@ export default function LiveView({ initial }: { initial: LiveSnapshot }) {
 
   useEffect(() => {
     let cancelled = false;
-    const id = setInterval(async () => {
+
+    const load = async () => {
       try {
         const next = await refreshLiveSnapshot();
         if (!cancelled) {
@@ -97,10 +98,25 @@ export default function LiveView({ initial }: { initial: LiveSnapshot }) {
         // and the header says so until the next poll succeeds.
         if (!cancelled) setStale(true);
       }
+    };
+
+    // Each poll is a server round-trip (auth check + several queries), so don't
+    // spend one on a tab nobody is looking at — a backgrounded Live View would
+    // otherwise bill an invocation every 10s indefinitely. Catch up the moment
+    // it comes back to the foreground instead.
+    const id = setInterval(() => {
+      if (document.visibilityState === "visible") void load();
     }, POLL_MS);
+
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void load();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
     return () => {
       cancelled = true;
       clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
 
