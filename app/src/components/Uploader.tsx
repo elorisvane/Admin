@@ -1,10 +1,11 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { uploadMedia } from "@/app/src/lib/uploadMedia";
 
 /**
- * File-upload field for images (and videos). Uploads the chosen file to
- * Supabase Storage via the `uploadFile` server action and reports back the
+ * File-upload field for images (and videos). Sends the chosen file straight from
+ * the browser to Supabase Storage (see `uploadMedia`) and reports back the
  * stored public URL through `onChange`. Replaces the old "paste a URL" inputs.
  */
 export function Uploader({
@@ -34,14 +35,7 @@ export function Uploader({
     setError(null);
     setUploading(true);
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.url) {
-        throw new Error(data.error || `Upload failed (${res.status})`);
-      }
-      onChange(data.url as string);
+      onChange(await uploadMedia(file));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {

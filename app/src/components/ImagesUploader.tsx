@@ -1,15 +1,17 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { uploadMedia } from "@/app/src/lib/uploadMedia";
 
 const VIDEO_RE = /\.(mp4|webm|mov)(\?.*)?$/i;
 const isVideo = (url: string) => VIDEO_RE.test(url);
 
 /**
- * Multi-media upload field. Uploads each chosen file (image or video) to
- * Supabase Storage via the `/api/upload` route and keeps an ordered gallery in
- * `value`. Items can be reordered to the front or removed. With `showCover`
- * (default) the first item is badged as the cover. Used by the product editor.
+ * Multi-media upload field. Sends each chosen file (image or video) straight
+ * from the browser to Supabase Storage (see `uploadMedia`) and keeps an ordered
+ * gallery in `value`. Items can be reordered to the front or removed. With
+ * `showCover` (default) the first item is badged as the cover. Used by the
+ * product editor.
  */
 export function ImagesUploader({
   value,
@@ -39,14 +41,7 @@ export function ImagesUploader({
     try {
       const uploaded: string[] = [];
       for (const file of files) {
-        const fd = new FormData();
-        fd.append("file", file);
-        const res = await fetch("/api/upload", { method: "POST", body: fd });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok || !data.url) {
-          throw new Error(data.error || `Upload failed (${res.status})`);
-        }
-        uploaded.push(data.url as string);
+        uploaded.push(await uploadMedia(file));
       }
       onChange([...value, ...uploaded]);
     } catch (err) {
