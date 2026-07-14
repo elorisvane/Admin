@@ -1,7 +1,7 @@
 "use client";
 
 import createGlobe from "cobe";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { GlobePoint } from "@/app/src/data/live";
 
 /**
@@ -18,16 +18,35 @@ const GOLD_500: [number, number, number] = [0.667, 0.486, 0.239]; // #aa7c3d
 // Somewhere a session came from earlier in the window, but nobody is there now.
 const DORMANT: [number, number, number] = [0.78, 0.75, 0.7];
 
-/** Bigger dot for a busier place, but flattened so one spike can't swamp the map. */
-function markerSize(sessions: number, peak: number): number {
-  const share = peak > 0 ? sessions / peak : 0;
-  return 0.03 + Math.sqrt(share) * 0.06;
+/**
+ * Dot size for a place, from its absolute session count — deliberately NOT from
+ * its share of the busiest place: with a single location that share is always 1,
+ * so every dot rendered at maximum size and the globe showed one fat blob.
+ *
+ * Stays a discreet pin (a city is a dot, not a continent) and grows only gently,
+ * flattening out so a spike can't swamp the map.
+ */
+const MARKER_MIN = 0.022;
+const MARKER_MAX = 0.045;
+
+function markerSize(sessions: number): number {
+  // Saturates around ~25 sessions; sqrt keeps early growth visible.
+  const weight = Math.min(1, Math.sqrt(Math.max(0, sessions) / 25));
+  return MARKER_MIN + weight * (MARKER_MAX - MARKER_MIN);
 }
+
+// Zoom bounds. 1 is the whole globe in frame; past ~4 the dot map turns coarse.
+const MIN_SCALE = 1;
+const MAX_SCALE = 4;
+const ZOOM_STEP = 1.3;
+
+const clampScale = (n: number) =>
+  Math.min(MAX_SCALE, Math.max(MIN_SCALE, n));
 
 export default function Globe({ points }: { points: GlobePoint[] }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  // Read inside onRender (which runs every frame) so new poll data appears
-  // without tearing down and rebuilding the globe.
+  // Read inside the render loop (which runs every frame) so new poll data
+  // appears without tearing down and rebuilding the globe.
   const pointsRef = useRef(points);
   pointsRef.current = points;
 
@@ -36,6 +55,16 @@ export default function Globe({ points }: { points: GlobePoint[] }) {
   const width = useRef(0);
   const dragging = useRef<number | null>(null);
   const offset = useRef(0);
+
+  // Zoom is held in a ref (read every frame by the render loop) and mirrored
+  // into state purely so the +/- buttons can disable at the limits.
+  const scale = useRef(1);
+  const [zoom, setZoom] = useState(1);
+
+  const zoomTo = (next: number) => {
+    scale.current = clampScale(next);
+    setZoom(scale.current);
+  };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -46,6 +75,16 @@ export default function Globe({ points }: { points: GlobePoint[] }) {
     };
     onResize();
     window.addEventListener("resize", onResize);
+
+    // Registered natively (not via React's onWheel) so it can be non-passive:
+    // preventDefault stops the wheel from scrolling the page while zooming.
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+      scale.current = clampScale(scale.current * factor);
+      setZoom(scale.current);
+    };
+    canvas.addEventListener("wheel", onWheel, { passive: false });
 
     const globe = createGlobe(canvas, {
       devicePixelRatio: 2,
@@ -67,18 +106,18 @@ export default function Globe({ points }: { points: GlobePoint[] }) {
     // spin (and picking up freshly polled markers) is driven from here.
     let frame = requestAnimationFrame(function render() {
       const live = pointsRef.current;
-      const peak = Math.max(1, ...live.map((p) => p.sessions));
 
       // Idle: drift eastward. Held: follow the pointer instead.
       if (dragging.current === null) phi.current += 0.003;
 
       globe.update({
         phi: phi.current + offset.current,
+        scale: scale.current,
         width: width.current * 2,
         height: width.current * 2,
         markers: live.map((p) => ({
           location: [p.lat, p.lng] as [number, number],
-          size: markerSize(p.sessions, peak),
+          size: markerSize(p.sessions),
           // Gold where someone is on the site right now; muted where they were
           // earlier in the window. Same split as the legend.
           color: p.live ? GOLD_500 : DORMANT,
@@ -93,6 +132,7 @@ export default function Globe({ points }: { points: GlobePoint[] }) {
       cancelAnimationFrame(frame);
       globe.destroy();
       window.removeEventListener("resize", onResize);
+      canvas.removeEventListener("wheel", onWheel);
     };
   }, []);
 
@@ -123,6 +163,46 @@ export default function Globe({ points }: { points: GlobePoint[] }) {
         className="h-full w-full cursor-grab opacity-0 transition-opacity duration-700"
         style={{ contain: "layout paint size" }}
       />
+      <div className="absolute right-2 top-2 flex flex-col overflow-hidden rounded-md border border-border bg-surface/90 backdrop-blur">
+        {[
+          {
+            label: "Zoom in",
+            glyph: "+",
+            onClick: () => zoomTo(zoom * ZOOM_STEP),
+            disabled: zoom >= MAX_SCALE,
+          },
+          {
+            label: "Zoom out",
+            glyph: "−",
+            onClick: () => zoomTo(zoom / ZOOM_STEP),
+            disabled: zoom <= MIN_SCALE,
+          },
+        ].map((b, i) => (
+          <button
+            key={b.label}
+            type="button"
+            aria-label={b.label}
+            onClick={b.onClick}
+            disabled={b.disabled}
+            className={`flex h-8 w-8 items-center justify-center text-base leading-none text-foreground transition-colors hover:bg-gold-50 hover:text-gold-600 disabled:opacity-30 disabled:hover:bg-transparent ${
+              i === 0 ? "border-b border-border" : ""
+            }`}
+          >
+            {b.glyph}
+          </button>
+        ))}
+      </div>
+
+      {zoom > MIN_SCALE && (
+        <button
+          type="button"
+          onClick={() => zoomTo(MIN_SCALE)}
+          className="absolute left-2 top-2 rounded-md border border-border bg-surface/90 px-2.5 py-1 text-[11px] uppercase tracking-widest text-muted backdrop-blur transition-colors hover:text-gold-600"
+        >
+          Reset
+        </button>
+      )}
+
       {points.length === 0 && (
         <p className="pointer-events-none absolute inset-x-0 bottom-6 text-center text-xs text-muted">
           No located sessions yet
