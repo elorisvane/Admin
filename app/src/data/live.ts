@@ -24,10 +24,31 @@ export interface LocationCount {
   sessions: number;
 }
 
-export interface RecentView {
+/** One page in a visitor's journey. */
+export interface LiveVisit {
   path: string;
-  location: string | null;
   at: string;
+}
+
+/**
+ * One visitor's session: who they are and the ordered path they walked through
+ * the storefront. This is the "one card per person" the Live activity feed shows
+ * instead of a flat, interleaved list of everyone's page views.
+ */
+export interface LiveSession {
+  /** Opaque per-visit id — used only as a stable React key, never shown. */
+  id: string;
+  location: string | null;
+  /** True when this visitor is a first-time visitor (not seen before the window). */
+  isNew: boolean;
+  /** True when their last page view was within the "here now" window. */
+  live: boolean;
+  firstAt: string;
+  lastAt: string;
+  /** Total page views in the window (may exceed the journey shown). */
+  views: number;
+  /** Pages in the order visited, oldest first, most recent last. */
+  journey: LiveVisit[];
 }
 
 /** One dot on the Live View globe. */
@@ -53,7 +74,8 @@ export interface LiveSnapshot {
   points: GlobePoint[];
   newVisitors: number;
   returningVisitors: number;
-  recent: RecentView[];
+  /** One entry per visitor, most recently active first, each with its journey. */
+  liveSessions: LiveSession[];
   /** When this snapshot was taken (ISO), so the client can age it. */
   takenAt: string;
   /**
@@ -154,6 +176,19 @@ export async function getLiveSnapshot(): Promise<LiveSnapshot> {
     { length: WINDOW_HOURS },
     () => new Set<string>(),
   );
+  // One entry per session id, so the Live activity feed can show a visitor and
+  // their whole path rather than a flat, interleaved list of page views.
+  const sessionAgg = new Map<
+    string,
+    {
+      visitorId: string;
+      location: string | null;
+      firstAt: number;
+      lastAt: number;
+      // Pushed newest-first because `events` is ordered created_at desc.
+      views: { path: string; at: string }[];
+    }
+  >();
 
   for (const e of events) {
     const at = new Date(e.created_at).getTime();
@@ -180,6 +215,23 @@ export async function getLiveSnapshot(): Promise<LiveSnapshot> {
       locations.get(label)!.add(e.session_id);
     }
 
+    const agg = sessionAgg.get(e.session_id);
+    if (agg) {
+      agg.firstAt = Math.min(agg.firstAt, at);
+      agg.lastAt = Math.max(agg.lastAt, at);
+      // Events arrive newest-first, so keep the first non-null location we see.
+      if (!agg.location && label) agg.location = label;
+      agg.views.push({ path: e.path, at: e.created_at });
+    } else {
+      sessionAgg.set(e.session_id, {
+        visitorId: e.visitor_id,
+        location: label,
+        firstAt: at,
+        lastAt: at,
+        views: [{ path: e.path, at: e.created_at }],
+      });
+    }
+
     if (e.latitude !== null && e.longitude !== null) {
       const key = `${e.latitude},${e.longitude}`;
       const spot = geo.get(key) ?? {
@@ -197,7 +249,7 @@ export async function getLiveSnapshot(): Promise<LiveSnapshot> {
   // New vs returning: a visitor is "returning" if they were seen before this
   // window opened. One grouped query would be nicer, but PostgREST can't express
   // it, so ask only about the visitors we actually saw.
-  let returningVisitors = 0;
+  let returningSet = new Set<string>();
   if (eventsReady && visitors.size > 0) {
     const { data, error } = await supabaseAdmin
       .from("storefront_events")
@@ -205,22 +257,36 @@ export async function getLiveSnapshot(): Promise<LiveSnapshot> {
       .in("visitor_id", [...visitors])
       .lt("created_at", windowStart.toISOString());
     if (error) throw new Error(error.message);
-    returningVisitors = new Set(
+    returningSet = new Set(
       (data ?? []).map((r) => (r as { visitor_id: string }).visitor_id),
-    ).size;
+    );
   }
+  const returningVisitors = returningSet.size;
 
   const byLocation = [...locations.entries()]
     .map(([label, s]) => ({ label, sessions: s.size }))
     .sort((a, b) => b.sessions - a.sessions)
     .slice(0, 8);
 
-  const recent: RecentView[] = events.slice(0, 12).map((e) => ({
-    path: e.path,
-    location:
-      e.city && e.country ? `${e.city}, ${e.country}` : (e.city ?? e.country),
-    at: e.created_at,
-  }));
+  // Most recently active visitor first; each with the last stretch of their
+  // journey in the order they walked it (oldest → newest).
+  const MAX_SESSIONS = 12;
+  const MAX_JOURNEY = 20;
+  const liveSessions: LiveSession[] = [...sessionAgg.entries()]
+    .sort(([, a], [, b]) => b.lastAt - a.lastAt)
+    .slice(0, MAX_SESSIONS)
+    .map(([id, s]) => ({
+      id,
+      location: s.location,
+      isNew: !returningSet.has(s.visitorId),
+      live: s.lastAt >= nowCutoff,
+      firstAt: new Date(s.firstAt).toISOString(),
+      lastAt: new Date(s.lastAt).toISOString(),
+      views: s.views.length,
+      // `views` was collected newest-first; reverse to oldest-first, then keep
+      // the most recent stretch so a marathon session stays a short card.
+      journey: s.views.slice().reverse().slice(-MAX_JOURNEY),
+    }));
 
   return {
     visitorsNow: visitorsNow.size,
@@ -240,7 +306,7 @@ export async function getLiveSnapshot(): Promise<LiveSnapshot> {
     })),
     newVisitors: visitors.size - returningVisitors,
     returningVisitors,
-    recent,
+    liveSessions,
     takenAt: new Date(now).toISOString(),
     eventsReady,
   };

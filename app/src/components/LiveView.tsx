@@ -15,6 +15,16 @@ const Globe = dynamic(() => import("@/app/src/components/Globe"), {
 
 const POLL_MS = 10_000;
 
+/** "now" / "12s ago" / "3m ago" — how long since a visitor's last page view. */
+function relTime(iso: string): string {
+  const s = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 1000));
+  if (s < 5) return "now";
+  if (s < 60) return `${s}s ago`;
+  const m = Math.round(s / 60);
+  if (m < 60) return `${m}m ago`;
+  return `${Math.round(m / 60)}h ago`;
+}
+
 /** "Just now" / "12s ago" — how stale the numbers on screen are. */
 function useAge(takenAt: string) {
   const [age, setAge] = useState(0);
@@ -242,25 +252,61 @@ export default function LiveView({ initial }: { initial: LiveSnapshot }) {
         </Panel>
 
         <Panel title="Live activity">
-          <ul className="divide-y divide-border">
-            {snap.recent.map((r, i) => (
+          {/* One card per visitor — who they are, then the path they walked,
+              oldest step first — rather than a flat feed of everyone's views. */}
+          <ul className="space-y-3">
+            {snap.liveSessions.map((s) => (
               <li
-                key={`${r.at}-${i}`}
-                className="flex items-center justify-between gap-3 py-2.5 text-sm"
+                key={s.id}
+                className="rounded-lg border border-border bg-surface/40 px-4 py-3"
               >
-                <span className="truncate text-foreground">{r.path}</span>
-                {/* Server renders this in its timezone, the browser in the
-                    viewer's — which is the intent, so let them differ. */}
-                <span
-                  suppressHydrationWarning
-                  className="shrink-0 text-[11px] text-muted"
-                >
-                  {r.location ?? "Unknown"} ·{" "}
-                  {new Date(r.at).toLocaleTimeString()}
-                </span>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`h-2 w-2 shrink-0 rounded-full ${
+                          s.live
+                            ? "animate-pulse bg-gold-500"
+                            : "bg-neutral-300"
+                        }`}
+                      />
+                      <span className="truncate text-sm text-foreground">
+                        {s.location ?? "Unknown location"}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-[11px] text-muted">
+                      {s.isNew ? "New visitor" : "Returning visitor"} ·{" "}
+                      {s.views} {s.views === 1 ? "page" : "pages"}
+                    </p>
+                  </div>
+                  {/* Relative time is timezone-agnostic, so it can render on the
+                      server and hydrate on the client without a mismatch. */}
+                  <span className="shrink-0 text-[11px] text-muted">
+                    {relTime(s.lastAt)}
+                  </span>
+                </div>
+
+                <ol className="mt-3 space-y-1.5 border-l border-border pl-3">
+                  {s.journey.map((v, i) => (
+                    <li
+                      key={`${v.at}-${i}`}
+                      className="flex items-center justify-between gap-3 text-[13px]"
+                    >
+                      <span className="truncate text-foreground">{v.path}</span>
+                      {/* Server renders this in its timezone, the browser in the
+                          viewer's — which is the intent, so let them differ. */}
+                      <span
+                        suppressHydrationWarning
+                        className="shrink-0 text-[11px] text-muted"
+                      >
+                        {new Date(v.at).toLocaleTimeString()}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
               </li>
             ))}
-            {snap.recent.length === 0 && (
+            {snap.liveSessions.length === 0 && (
               <li className="py-2 text-sm text-muted">No page views yet.</li>
             )}
           </ul>
