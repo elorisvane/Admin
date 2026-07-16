@@ -15,6 +15,25 @@ const Globe = dynamic(() => import("@/app/src/components/Globe"), {
 
 const POLL_MS = 10_000;
 
+/** Session length as m:ss, or h:mm:ss once it runs past an hour. */
+function duration(seconds: number): string {
+  const s = Math.max(0, seconds);
+  const hh = Math.floor(s / 3600);
+  const mm = Math.floor((s % 3600) / 60);
+  const ss = s % 60;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return hh > 0 ? `${hh}:${pad(mm)}:${pad(ss)}` : `${mm}:${pad(ss)}`;
+}
+
+/** "google.com" — the bare host, which is all a referrer needs to say. */
+function refHost(referrer: string): string {
+  try {
+    return new URL(referrer).hostname.replace(/^www\./, "");
+  } catch {
+    return referrer;
+  }
+}
+
 /** "now" / "12s ago" / "3m ago" — how long since a visitor's last page view. */
 function relTime(iso: string): string {
   const s = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 1000));
@@ -92,6 +111,20 @@ export default function LiveView({ initial }: { initial: LiveSnapshot }) {
   const [snap, setSnap] = useState(initial);
   const [stale, setStale] = useState(false);
   const age = useAge(snap.takenAt);
+  // Which cards have their journey open. Keyed by session id, and held apart
+  // from `snap`, so an open card survives the 10s poll swapping the snapshot
+  // underneath it — and stays open as its own journey grows.
+  const [openSessions, setOpenSessions] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+
+  const toggleSession = (id: string) =>
+    setOpenSessions((prev) => {
+      const next = new Set(prev);
+      // `delete` reports whether it was there — so this is toggle in one step.
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
 
   useEffect(() => {
     let cancelled = false;
@@ -162,8 +195,9 @@ export default function LiveView({ initial }: { initial: LiveSnapshot }) {
           <Card className="border-amber-200 bg-amber-50 px-5 py-4">
             <p className="text-sm text-amber-800">
               Visitor tracking isn&apos;t live yet. Run migrations{" "}
-              <span className="font-medium">0020</span> and{" "}
-              <span className="font-medium">0021</span> in the Supabase SQL
+              <span className="font-medium">0020</span>,{" "}
+              <span className="font-medium">0021</span> and{" "}
+              <span className="font-medium">0023</span> in the Supabase SQL
               editor and deploy the storefront. Orders, sales and bags below are
               already real.
             </p>
@@ -255,7 +289,21 @@ export default function LiveView({ initial }: { initial: LiveSnapshot }) {
           {/* One card per visitor — who they are, then the path they walked,
               oldest step first — rather than a flat feed of everyone's views. */}
           <ul className="space-y-3">
-            {snap.liveSessions.map((s) => (
+            {snap.liveSessions.map((s) => {
+              const isOpen = openSessions.has(s.id);
+              // "mobile · Safari · iOS" — whichever parts the UA gave up.
+              const device = [s.device, s.browser, s.os]
+                .filter(Boolean)
+                .join(" · ");
+              // "google / organic · summer-edit"
+              const campaign = [
+                [s.utmSource, s.utmMedium].filter(Boolean).join(" / "),
+                s.utmCampaign,
+              ]
+                .filter(Boolean)
+                .join(" · ");
+
+              return (
               <li
                 key={s.id}
                 className="rounded-lg border border-border bg-surface/40 px-4 py-3"
@@ -284,7 +332,7 @@ export default function LiveView({ initial }: { initial: LiveSnapshot }) {
                     </div>
                     {/* Contact details only ever appear for a signed-in customer
                         — the data they gave ÉLORIS, never a de-anonymised guess. */}
-                    {s.identity ? (
+                    {s.identity && (
                       <div className="mt-1 space-y-0.5 text-[11px] text-muted">
                         {s.identity.email && s.identity.name && (
                           <p className="truncate">{s.identity.email}</p>
@@ -293,18 +341,13 @@ export default function LiveView({ initial }: { initial: LiveSnapshot }) {
                         {s.identity.address && (
                           <p className="truncate">{s.identity.address}</p>
                         )}
-                        <p>
-                          {s.isNew ? "New" : "Returning"} · {s.views}{" "}
-                          {s.views === 1 ? "page" : "pages"} ·{" "}
-                          {s.location ?? "Unknown"}
-                        </p>
                       </div>
-                    ) : (
-                      <p className="mt-1 text-[11px] text-muted">
-                        {s.isNew ? "New visitor" : "Returning visitor"} ·{" "}
-                        {s.views} {s.views === 1 ? "page" : "pages"}
-                      </p>
                     )}
+                    <p className="mt-1 text-[11px] text-muted">
+                      {s.isNew ? "New visitor" : "Returning visitor"}
+                      {/* Location already titles the card when nobody is named. */}
+                      {s.identity && s.location ? ` · ${s.location}` : ""}
+                    </p>
                   </div>
                   {/* Relative time is timezone-agnostic, so it can render on the
                       server and hydrate on the client without a mismatch. */}
@@ -313,26 +356,86 @@ export default function LiveView({ initial }: { initial: LiveSnapshot }) {
                   </span>
                 </div>
 
-                <ol className="mt-3 space-y-1.5 border-l border-border pl-3">
-                  {s.journey.map((v, i) => (
-                    <li
-                      key={`${v.at}-${i}`}
-                      className="flex items-center justify-between gap-3 text-[13px]"
-                    >
-                      <span className="truncate text-foreground">{v.path}</span>
-                      {/* Server renders this in its timezone, the browser in the
-                          viewer's — which is the intent, so let them differ. */}
-                      <span
-                        suppressHydrationWarning
-                        className="shrink-0 text-[11px] text-muted"
-                      >
-                        {new Date(v.at).toLocaleTimeString()}
-                      </span>
-                    </li>
-                  ))}
-                </ol>
+                <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[11px]">
+                  <dt className="text-muted">Entry</dt>
+                  <dd className="truncate text-foreground">{s.entryPath}</dd>
+                  <dt className="text-muted">Exit</dt>
+                  <dd className="truncate text-foreground">{s.exitPath}</dd>
+                  <dt className="text-muted">Duration</dt>
+                  <dd className="text-foreground">
+                    {duration(s.durationSeconds)} · {s.views}{" "}
+                    {s.views === 1 ? "page" : "pages"}
+                  </dd>
+                  {s.referrer && (
+                    <>
+                      <dt className="text-muted">Referrer</dt>
+                      <dd className="truncate text-foreground">
+                        {refHost(s.referrer)}
+                      </dd>
+                    </>
+                  )}
+                  {device && (
+                    <>
+                      <dt className="text-muted">Device</dt>
+                      <dd className="truncate text-foreground">{device}</dd>
+                    </>
+                  )}
+                  {campaign && (
+                    <>
+                      <dt className="text-muted">Campaign</dt>
+                      <dd className="truncate text-foreground">{campaign}</dd>
+                    </>
+                  )}
+                </dl>
+
+                {/* The journey is the long part — a busy session runs to dozens
+                    of rows and would bury every card under it. Entry/Exit above
+                    already say where it started and ended, so keep the step list
+                    behind "More details". */}
+                {isOpen && (
+                  <>
+                    <ol className="mt-3 space-y-1.5 border-l border-border pl-3">
+                      {s.journey.map((v, i) => (
+                        <li
+                          key={`${v.at}-${i}`}
+                          className="flex items-center justify-between gap-3 text-[13px]"
+                        >
+                          <span className="truncate text-foreground">
+                            {v.path}
+                          </span>
+                          {/* Server renders this in its timezone, the browser in
+                              the viewer's — the intent, so let them differ. */}
+                          <span
+                            suppressHydrationWarning
+                            className="shrink-0 text-[11px] text-muted"
+                          >
+                            {new Date(v.at).toLocaleTimeString()}
+                          </span>
+                        </li>
+                      ))}
+                    </ol>
+                    {/* The snapshot only carries the tail of a long journey; say
+                        so rather than let the list quietly contradict "36 pages". */}
+                    {s.views > s.journey.length && (
+                      <p className="mt-2 text-[10px] text-muted/70">
+                        Showing the last {s.journey.length} of {s.views} pages.
+                      </p>
+                    )}
+                  </>
+                )}
+
+                <div className="mt-2 flex justify-end">
+                  <button
+                    onClick={() => toggleSession(s.id)}
+                    aria-expanded={isOpen}
+                    className="text-[11px] text-gold-600 transition-colors hover:text-gold-500"
+                  >
+                    {isOpen ? "Hide details" : "More details"}
+                  </button>
+                </div>
               </li>
-            ))}
+              );
+            })}
             {snap.liveSessions.length === 0 && (
               <li className="py-2 text-sm text-muted">No page views yet.</li>
             )}

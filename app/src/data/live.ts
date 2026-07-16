@@ -65,6 +65,22 @@ export interface LiveSession {
   journey: LiveVisit[];
   /** The customer this session belongs to, if they've ever signed in on it. */
   identity: LiveIdentity | null;
+  /** The page they arrived on. */
+  entryPath: string;
+  /** The page they're on / left from. */
+  exitPath: string;
+  /** First view → last view, in seconds. 0 for a single-page session. */
+  durationSeconds: number;
+  /** External site that sent them, if any (in-site navigation isn't a referrer). */
+  referrer: string | null;
+  /** Coarse form factor: "mobile" | "tablet" | "desktop". */
+  device: string | null;
+  browser: string | null;
+  os: string | null;
+  /** Campaign tags from the inbound link, carried from the entry view. */
+  utmSource: string | null;
+  utmMedium: string | null;
+  utmCampaign: string | null;
 }
 
 /** One dot on the Live View globe. */
@@ -121,10 +137,17 @@ interface EventRow {
   session_id: string;
   visitor_id: string;
   path: string;
+  referrer: string | null;
   country: string | null;
   city: string | null;
   latitude: number | null;
   longitude: number | null;
+  device_type: string | null;
+  browser: string | null;
+  os: string | null;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
   created_at: string;
 }
 
@@ -251,7 +274,7 @@ export async function getLiveSnapshot(): Promise<LiveSnapshot> {
     supabaseAdmin
       .from("storefront_events")
       .select(
-        "session_id, visitor_id, path, country, city, latitude, longitude, created_at",
+        "session_id, visitor_id, path, referrer, country, city, latitude, longitude, device_type, browser, os, utm_source, utm_medium, utm_campaign, created_at",
       )
       .gte("created_at", windowStart.toISOString())
       .order("created_at", { ascending: false }),
@@ -299,6 +322,17 @@ export async function getLiveSnapshot(): Promise<LiveSnapshot> {
       lastAt: number;
       // Pushed newest-first because `events` is ordered created_at desc.
       views: { path: string; at: string }[];
+      // Session context. Referrer and UTM tags only ride on the entry view, and
+      // device/browser/OS repeat on every view — so for all of them we keep
+      // overwriting with each non-null. Iterating newest→oldest, the last write
+      // wins, which lands on the oldest (entry) view. See the loop below.
+      referrer: string | null;
+      device: string | null;
+      browser: string | null;
+      os: string | null;
+      utmSource: string | null;
+      utmMedium: string | null;
+      utmCampaign: string | null;
     }
   >();
 
@@ -334,6 +368,14 @@ export async function getLiveSnapshot(): Promise<LiveSnapshot> {
       // Events arrive newest-first, so keep the first non-null location we see.
       if (!agg.location && label) agg.location = label;
       agg.views.push({ path: e.path, at: e.created_at });
+      // Overwrite-if-present: ends on the oldest (entry) view's values.
+      if (e.referrer) agg.referrer = e.referrer;
+      if (e.device_type) agg.device = e.device_type;
+      if (e.browser) agg.browser = e.browser;
+      if (e.os) agg.os = e.os;
+      if (e.utm_source) agg.utmSource = e.utm_source;
+      if (e.utm_medium) agg.utmMedium = e.utm_medium;
+      if (e.utm_campaign) agg.utmCampaign = e.utm_campaign;
     } else {
       sessionAgg.set(e.session_id, {
         visitorId: e.visitor_id,
@@ -341,6 +383,13 @@ export async function getLiveSnapshot(): Promise<LiveSnapshot> {
         firstAt: at,
         lastAt: at,
         views: [{ path: e.path, at: e.created_at }],
+        referrer: e.referrer,
+        device: e.device_type,
+        browser: e.browser,
+        os: e.os,
+        utmSource: e.utm_source,
+        utmMedium: e.utm_medium,
+        utmCampaign: e.utm_campaign,
       });
     }
 
@@ -405,6 +454,17 @@ export async function getLiveSnapshot(): Promise<LiveSnapshot> {
     // the most recent stretch so a marathon session stays a short card.
     journey: s.views.slice().reverse().slice(-MAX_JOURNEY),
     identity: identities.get(s.visitorId) ?? null,
+    // `views` is still newest-first here: the last element is where they landed.
+    entryPath: s.views[s.views.length - 1].path,
+    exitPath: s.views[0].path,
+    durationSeconds: Math.round((s.lastAt - s.firstAt) / 1000),
+    referrer: s.referrer,
+    device: s.device,
+    browser: s.browser,
+    os: s.os,
+    utmSource: s.utmSource,
+    utmMedium: s.utmMedium,
+    utmCampaign: s.utmCampaign,
   }));
 
   return {
