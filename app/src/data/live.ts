@@ -31,6 +31,20 @@ export interface LiveVisit {
 }
 
 /**
+ * The customer behind a session, resolved only when the visitor signed in (see
+ * visitor_identities, migration 0022). Null for anonymous visitors — we never
+ * put a name to a stranger. Fields come from the data the customer gave ÉLORIS:
+ * their account + profile + address book.
+ */
+export interface LiveIdentity {
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  /** Coarse "City, State, Country" from their address book, if they saved one. */
+  address: string | null;
+}
+
+/**
  * One visitor's session: who they are and the ordered path they walked through
  * the storefront. This is the "one card per person" the Live activity feed shows
  * instead of a flat, interleaved list of everyone's page views.
@@ -49,6 +63,8 @@ export interface LiveSession {
   views: number;
   /** Pages in the order visited, oldest first, most recent last. */
   journey: LiveVisit[];
+  /** The customer this session belongs to, if they've ever signed in on it. */
+  identity: LiveIdentity | null;
 }
 
 /** One dot on the Live View globe. */
@@ -125,6 +141,102 @@ function sumTotals(totals: (string | null)[]): string {
     if (!symbol) symbol = t.match(/^[^\d\s]+/)?.[0] ?? "";
   }
   return `${symbol || "$"}${sum.toLocaleString("en-US")}`;
+}
+
+/**
+ * Resolve the visitors we're about to show to the customers they signed in as.
+ *
+ * Best-effort and self-contained: if migration 0022 hasn't been run yet (or any
+ * lookup fails), it returns an empty map so every session simply renders as
+ * anonymous — the identity overlay must never take down the Live View. Only ever
+ * reads customer data that the customer themselves gave ÉLORIS.
+ */
+async function resolveIdentities(
+  visitorIds: string[],
+): Promise<Map<string, LiveIdentity>> {
+  const out = new Map<string, LiveIdentity>();
+  if (visitorIds.length === 0) return out;
+
+  try {
+    const { data: links, error } = await supabaseAdmin
+      .from("visitor_identities")
+      .select("visitor_id, user_id, email, full_name")
+      .in("visitor_id", visitorIds);
+    // Table not created yet, or any read error → nobody is identified.
+    if (error) return out;
+
+    const rows = (links ?? []) as {
+      visitor_id: string;
+      user_id: string;
+      email: string | null;
+      full_name: string | null;
+    }[];
+    if (rows.length === 0) return out;
+
+    const userIds = [...new Set(rows.map((r) => r.user_id))];
+    const [profilesRes, addressesRes] = await Promise.all([
+      supabaseAdmin
+        .from("profiles")
+        .select("id, first_name, last_name, phone")
+        .in("id", userIds),
+      supabaseAdmin
+        .from("addresses")
+        .select("user_id, city, state, country, is_default_shipping, created_at")
+        .in("user_id", userIds),
+    ]);
+
+    const profiles = new Map<
+      string,
+      { name: string | null; phone: string | null }
+    >();
+    for (const p of (profilesRes.data ?? []) as {
+      id: string;
+      first_name: string | null;
+      last_name: string | null;
+      phone: string | null;
+    }[]) {
+      const name = [p.first_name, p.last_name].filter(Boolean).join(" ") || null;
+      profiles.set(p.id, { name, phone: p.phone });
+    }
+
+    // One address per customer: prefer their default shipping address, else the
+    // most recently added. First match wins after this sort.
+    const addresses = new Map<string, string>();
+    const addrRows = ((addressesRes.data ?? []) as {
+      user_id: string;
+      city: string | null;
+      state: string | null;
+      country: string | null;
+      is_default_shipping: boolean;
+      created_at: string;
+    }[])
+      .slice()
+      .sort((a, b) => {
+        if (a.is_default_shipping !== b.is_default_shipping)
+          return a.is_default_shipping ? -1 : 1;
+        return b.created_at.localeCompare(a.created_at);
+      });
+    for (const a of addrRows) {
+      if (addresses.has(a.user_id)) continue;
+      const parts = [a.city, a.state, a.country].filter(Boolean);
+      if (parts.length) addresses.set(a.user_id, parts.join(", "));
+    }
+
+    for (const r of rows) {
+      const profile = profiles.get(r.user_id);
+      out.set(r.visitor_id, {
+        name: r.full_name || profile?.name || null,
+        email: r.email,
+        phone: profile?.phone ?? null,
+        address: addresses.get(r.user_id) ?? null,
+      });
+    }
+  } catch {
+    // Identity is an overlay on top of the anonymous feed; degrade, don't crash.
+    return out;
+  }
+
+  return out;
 }
 
 export async function getLiveSnapshot(): Promise<LiveSnapshot> {
@@ -272,21 +384,28 @@ export async function getLiveSnapshot(): Promise<LiveSnapshot> {
   // journey in the order they walked it (oldest → newest).
   const MAX_SESSIONS = 12;
   const MAX_JOURNEY = 20;
-  const liveSessions: LiveSession[] = [...sessionAgg.entries()]
+  const topSessions = [...sessionAgg.entries()]
     .sort(([, a], [, b]) => b.lastAt - a.lastAt)
-    .slice(0, MAX_SESSIONS)
-    .map(([id, s]) => ({
-      id,
-      location: s.location,
-      isNew: !returningSet.has(s.visitorId),
-      live: s.lastAt >= nowCutoff,
-      firstAt: new Date(s.firstAt).toISOString(),
-      lastAt: new Date(s.lastAt).toISOString(),
-      views: s.views.length,
-      // `views` was collected newest-first; reverse to oldest-first, then keep
-      // the most recent stretch so a marathon session stays a short card.
-      journey: s.views.slice().reverse().slice(-MAX_JOURNEY),
-    }));
+    .slice(0, MAX_SESSIONS);
+
+  // Put a customer to the visitors who've signed in on their browser (only).
+  const identities = await resolveIdentities(
+    eventsReady ? topSessions.map(([, s]) => s.visitorId) : [],
+  );
+
+  const liveSessions: LiveSession[] = topSessions.map(([id, s]) => ({
+    id,
+    location: s.location,
+    isNew: !returningSet.has(s.visitorId),
+    live: s.lastAt >= nowCutoff,
+    firstAt: new Date(s.firstAt).toISOString(),
+    lastAt: new Date(s.lastAt).toISOString(),
+    views: s.views.length,
+    // `views` was collected newest-first; reverse to oldest-first, then keep
+    // the most recent stretch so a marathon session stays a short card.
+    journey: s.views.slice().reverse().slice(-MAX_JOURNEY),
+    identity: identities.get(s.visitorId) ?? null,
+  }));
 
   return {
     visitorsNow: visitorsNow.size,

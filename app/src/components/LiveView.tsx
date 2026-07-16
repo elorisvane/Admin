@@ -271,13 +271,40 @@ export default function LiveView({ initial }: { initial: LiveSnapshot }) {
                         }`}
                       />
                       <span className="truncate text-sm text-foreground">
-                        {s.location ?? "Unknown location"}
+                        {s.identity?.name ||
+                          s.identity?.email ||
+                          s.location ||
+                          "Unknown location"}
                       </span>
+                      {s.identity && (
+                        <span className="shrink-0 rounded-full bg-gold-100 px-2 py-0.5 text-[10px] uppercase tracking-wide text-gold-600">
+                          Customer
+                        </span>
+                      )}
                     </div>
-                    <p className="mt-1 text-[11px] text-muted">
-                      {s.isNew ? "New visitor" : "Returning visitor"} ·{" "}
-                      {s.views} {s.views === 1 ? "page" : "pages"}
-                    </p>
+                    {/* Contact details only ever appear for a signed-in customer
+                        — the data they gave ÉLORIS, never a de-anonymised guess. */}
+                    {s.identity ? (
+                      <div className="mt-1 space-y-0.5 text-[11px] text-muted">
+                        {s.identity.email && s.identity.name && (
+                          <p className="truncate">{s.identity.email}</p>
+                        )}
+                        {s.identity.phone && <p>{s.identity.phone}</p>}
+                        {s.identity.address && (
+                          <p className="truncate">{s.identity.address}</p>
+                        )}
+                        <p>
+                          {s.isNew ? "New" : "Returning"} · {s.views}{" "}
+                          {s.views === 1 ? "page" : "pages"} ·{" "}
+                          {s.location ?? "Unknown"}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="mt-1 text-[11px] text-muted">
+                        {s.isNew ? "New visitor" : "Returning visitor"} ·{" "}
+                        {s.views} {s.views === 1 ? "page" : "pages"}
+                      </p>
+                    )}
                   </div>
                   {/* Relative time is timezone-agnostic, so it can render on the
                       server and hydrate on the client without a mismatch. */}
